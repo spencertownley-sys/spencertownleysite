@@ -1,0 +1,326 @@
+/* Room mode: the illustrated scene and the mobile grid. */
+
+.room-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--cream);
+}
+
+.room-layer {
+  pointer-events: none;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* ---------- objects ---------- */
+
+.room-object {
+  position: absolute;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.room-object:focus-visible {
+  outline: none;
+}
+
+.room-object:focus-visible .object-art {
+  outline: 3px dashed var(--red);
+  outline-offset: 8px;
+  border-radius: 14px;
+}
+
+.object-body {
+  position: relative;
+  display: block;
+  transform-origin: 50% 92%;
+}
+
+.layer-wall .object-body {
+  transform-origin: 50% 10%;
+}
+
+.object-art {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+}
+
+.object-art img {
+  position: absolute;
+  max-width: none;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.object-shadow {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -2.5%;
+  height: 7%;
+  border-radius: 50%;
+  background: rgba(35, 28, 26, 0.2);
+  filter: blur(1.5px);
+}
+
+.obj-guitar .object-shadow {
+  left: 0;
+  right: 48%;
+  bottom: 0;
+}
+
+.obj-backpack .object-shadow {
+  left: 8%;
+  right: 20%;
+}
+
+.object-tag {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  white-space: nowrap;
+  font-family: var(--font-room);
+  font-weight: 800;
+  font-size: clamp(12.5px, 0.95cqw, 17px);
+  background: var(--paper);
+  color: var(--ink);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.3em 0.95em;
+  box-shadow: 3px 3px 0 var(--ink);
+  opacity: 0;
+  transform: translate(-50%, 8px) scale(0.9);
+  transition:
+    opacity 0.16s ease,
+    transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.object-tag.below {
+  bottom: auto;
+  top: calc(100% + 12px);
+  transform: translate(-50%, -8px) scale(0.9);
+}
+
+.room-object:hover .object-tag,
+.room-object:focus-visible .object-tag {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+/* ---------- ambient loops ---------- */
+
+.clouds {
+  animation: clouds 70s linear infinite;
+}
+
+@keyframes clouds {
+  to {
+    transform: translateX(var(--shift, -360px));
+  }
+}
+
+.clock-second {
+  animation: tick 60s steps(60) infinite;
+}
+
+@keyframes tick {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.plant {
+  animation: sway 7s ease-in-out infinite;
+}
+
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-1.6deg);
+  }
+  50% {
+    transform: rotate(1.6deg);
+  }
+}
+
+.tv-screen {
+  position: absolute;
+  border-radius: 20% / 24%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tv-screen::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.55) 50%, transparent 58%);
+  animation: sheen 5.5s ease-in-out infinite;
+}
+
+.tv-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.12) 0 2px, transparent 2px 6px);
+  mix-blend-mode: soft-light;
+  animation: flicker 3.2s steps(2) infinite;
+}
+
+@keyframes sheen {
+  0%,
+  55% {
+    transform: translateX(-60%);
+  }
+  85%,
+  100% {
+    transform: translateX(60%);
+  }
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.obj-speaker .object-art {
+  transform-origin: 50% 100%;
+  animation: thump 0.86s ease-in-out infinite;
+}
+
+@keyframes thump {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  12% {
+    transform: scale(1.025, 0.975);
+  }
+  30% {
+    transform: scale(0.99, 1.02);
+  }
+}
+
+.obj-poster .object-art {
+  filter: drop-shadow(4px 5px 0 rgba(35, 28, 26, 0.14));
+}
+
+/* ---------- mobile grid ---------- */
+
+.room-grid-wrap {
+  padding: calc(var(--bar-h) + 18px) 14px calc(var(--foot-h) + 28px);
+  max-width: 640px;
+  margin: 0 auto;
+  background-image: radial-gradient(#e7ddca 2px, transparent 2.4px);
+  background-size: 34px 34px;
+  min-height: 100%;
+}
+
+.grid-intro {
+  margin: 4px 4px 18px;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-wrap: pretty;
+}
+
+.grid-hint {
+  color: var(--red);
+}
+
+.room-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.room-grid li:first-child {
+  grid-column: 1 / -1;
+}
+
+.grid-tile {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  padding: 16px 12px 14px;
+  border-radius: 22px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tile-art {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 110px;
+  margin-bottom: 6px;
+}
+
+.tile-art .object-art {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+}
+
+.tile-backpack .tile-art {
+  height: 140px;
+}
+
+.tile-plaque .tile-art .object-art {
+  height: 100%;
+}
+
+.tile-label {
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 1.15;
+}
+
+.tile-sub {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+.tile-backpack {
+  background: #fff6e3;
+}
+
+.tile-backpack .tile-label {
+  font-size: 19px;
+}
