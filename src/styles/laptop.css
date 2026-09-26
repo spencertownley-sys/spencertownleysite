@@ -273,16 +273,89 @@
   color: #8a4b12;
 }
 
+/* ---------- dock ---------- */
+
+.desk-dock {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 10px;
+  translate: -50% 0;
+  display: flex;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.dock-item {
+  position: relative;
+  display: block;
+  width: 46px;
+  height: 46px;
+  transition: transform 0.18s cubic-bezier(0.3, 1.5, 0.5, 1);
+  transform-origin: 50% 100%;
+}
+
+.dock-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+}
+
+.dock-item:hover,
+.dock-item:focus-visible {
+  transform: scale(1.18) translateY(-4px);
+}
+
+.dock-item:focus-visible {
+  outline: 2.5px solid #3d8bfd;
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+
+.dock-item::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  translate: -50% 0;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(35, 28, 26, 0.85);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.dock-item:hover::after,
+.dock-item:focus-visible::after {
+  opacity: 1;
+}
+
+.desk .desk-dock a.dock-item {
+  cursor: url('../assets/cursor/mac-arrow-1x.svg') 2 2, default;
+  cursor: image-set(url('../assets/cursor/mac-arrow-1x.svg') 1x, url('../assets/cursor/mac-arrow-2x.svg') 2x) 2 2, default;
+}
+
 /* ---------- windows ---------- */
 
 .desk-window {
   position: absolute;
   z-index: 2;
   left: 50%;
-  top: calc(50% + 17px);
+  top: calc(50% - 14px);
   translate: -50% -50%;
   width: min(940px, calc(100% - 48px));
-  height: min(640px, calc(100% - 62px));
+  height: min(620px, calc(100% - 134px));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   border-radius: 12px;
@@ -456,6 +529,17 @@
   color: #2d6a3c;
   font-size: 12.5px;
   font-weight: 800;
+}
+
+.readme-status.is-soon {
+  background: #f3ece0;
+  color: #6d5c52;
+  border: 1px dashed rgba(35, 28, 26, 0.3);
+}
+
+.readme .readme-hint {
+  color: #8f8175;
+  font-style: italic;
 }
 
 .readme-desc {
@@ -765,7 +849,7 @@
   left: 0;
   translate: none;
   width: 100%;
-  height: calc(100% - 34px);
+  height: calc(100% - 108px);
   border-radius: 0;
 }
 

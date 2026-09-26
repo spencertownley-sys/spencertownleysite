@@ -28,6 +28,13 @@ export const GithubIcon = (p: P) => (
   </svg>
 )
 
+export const LinkedinIcon = (p: P) => (
+  <svg {...base} {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" strokeWidth="2" />
+    <path d="M8 10.5V16M8 7.6v.1M11.5 16v-5.5M11.5 13.2c0-1.6 1-2.8 2.5-2.8s2.3 1 2.3 2.7V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+)
+
 export const YoutubeIcon = (p: P) => (
   <svg {...base} {...p}>
     <rect x="2.5" y="5" width="19" height="14" rx="4" stroke="currentColor" strokeWidth="2" />

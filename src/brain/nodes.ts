@@ -26,4 +26,6 @@ export const brainNodes: BrainNodeDef[] = [
   { id: 'countries', dir: [-0.9, -0.45, 0.05] }, // hippocampus, medial temporal (left)
   { id: 'currently', dir: [0.45, -0.75, 0.5] }, // reward circuit, underside
   { id: 'listen', dir: [0, -1, 0], point: [0, -1.02, -0.3] }, // brainstem relay
+  { id: 'games', dir: [0.4, -0.7, -0.75] }, // cerebellum, low at the back
+  { id: 'writing', dir: [-0.85, 0.4, -0.3] }, // angular gyrus (left), where reading and writing meet
 ]

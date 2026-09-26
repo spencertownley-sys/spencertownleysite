@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { links, site } from '../content/site'
 import { ambience } from '../lib/audio'
 import { closeToScene, navigate, type Mode } from '../lib/router'
-import { ArrowIcon, CameraIcon, GithubIcon, InstagramIcon, MailIcon, SoundOffIcon, SoundOnIcon } from './icons'
+import { ArrowIcon, CameraIcon, GithubIcon, InstagramIcon, LinkedinIcon, MailIcon, SoundOffIcon, SoundOnIcon } from './icons'
 
 export function SkipLink({ compact, className = '' }: { compact?: boolean; className?: string }) {
   const go = (e: MouseEvent<HTMLAnchorElement>) => {
@@ -78,6 +78,10 @@ export function TopBar({ mode, onMode, compact }: { mode: Mode; onMode: (m: Mode
         >
           <span className="wordmark-name">{site.name}</span>
           <span className="wordmark-role">{site.role}</span>
+          <span className="wordmark-open" title={`${site.openTo}. ${site.openToWhere}.`}>
+            <i aria-hidden="true" />
+            {site.openTo}
+          </span>
         </a>
         {!compact && <SkipLink className="skip-top" />}
       </div>
@@ -93,6 +97,7 @@ export function TopBar({ mode, onMode, compact }: { mode: Mode; onMode: (m: Mode
 
 export function IconTray() {
   const items = [
+    { ...links.linkedin, icon: <LinkedinIcon /> },
     { ...links.travelInstagram, icon: <InstagramIcon /> },
     { ...links.photoInstagram, icon: <CameraIcon /> },
     { ...links.github, icon: <GithubIcon /> },

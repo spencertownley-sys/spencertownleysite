@@ -7,10 +7,12 @@ import { FxCanvas } from './fx/FxCanvas'
 import { ambience } from './lib/audio'
 import { COMPACT_QUERY, useMediaQuery, useReducedMotion } from './lib/hooks'
 import { closeToScene, navigate, setMode, useLocation, type Mode } from './lib/router'
+import { GameConsole } from './games/GameConsole'
 import { LaptopDesktop } from './laptop/LaptopDesktop'
 import { PanelHost } from './panels/PanelHost'
 import { RoomGrid } from './room/RoomGrid'
 import { RoomScene } from './room/RoomScene'
+import type { ZoomTarget } from './room/zoom'
 
 // three.js only loads when Brain mode is first needed (or once the page is idle).
 const loadBrain = () => import('./brain/BrainScene')
@@ -26,8 +28,10 @@ export default function App() {
   const compact = useMediaQuery(COMPACT_QUERY)
   const reduced = useReducedMotion()
   const section = sectionForPath(path)
-  // In the Room, the projects live on the laptop: the camera flies into its screen.
-  const laptopOpen = mode === 'room' && section?.id === 'projects'
+  // In the Room, the projects live on the laptop and the games on the console under the
+  // TV: the camera flies in to them instead of opening a panel.
+  const zoomTo: ZoomTarget | null =
+    mode !== 'room' ? null : section?.id === 'projects' ? 'laptop' : section?.id === 'games' ? 'console' : null
 
   const open = useCallback((id: SectionId) => navigate(sectionById[id].path), [])
   const close = useCallback(() => closeToScene(), [])
@@ -64,7 +68,7 @@ export default function App() {
   }, [])
 
   const scene = (m: Mode) =>
-    m === 'room' ? compact ? <RoomGrid onOpen={open} /> : <RoomScene onOpen={open} laptopOpen={laptopOpen} /> : (
+    m === 'room' ? compact ? <RoomGrid onOpen={open} /> : <RoomScene onOpen={open} zoomTo={zoomTo} /> : (
         <Suspense fallback={<div className="brain-scene" />}>
           <BrainScene onOpen={open} panelOpen={!!section} />
         </Suspense>
@@ -100,8 +104,11 @@ export default function App() {
       <BottomBar compact={compact} mode={mode} />
       <FxCanvas mode={mode} />
       <CursorGlow />
-      <PanelHost section={laptopOpen ? undefined : section} mode={mode} compact={compact} onClose={close} />
-      <AnimatePresence initial={false}>{laptopOpen && <LaptopDesktop key="laptop" compact={compact} onClose={close} />}</AnimatePresence>
+      <PanelHost section={zoomTo ? undefined : section} mode={mode} compact={compact} onClose={close} />
+      <AnimatePresence initial={false}>
+        {zoomTo === 'laptop' && <LaptopDesktop key="laptop" compact={compact} onClose={close} />}
+        {zoomTo === 'console' && <GameConsole key="console" compact={compact} onClose={close} />}
+      </AnimatePresence>
     </div>
   )
 }

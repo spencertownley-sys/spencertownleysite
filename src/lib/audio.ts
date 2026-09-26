@@ -6,7 +6,7 @@
 import { audio as audioConfig } from '../content/site'
 import type { Mode } from './router'
 
-type Sfx = 'hover' | 'open' | 'close' | 'toggle-brain' | 'toggle-room' | 'dissolve'
+type Sfx = 'hover' | 'open' | 'close' | 'toggle-brain' | 'toggle-room' | 'dissolve' | 'blip' | 'select' | 'power'
 
 const MUTE_KEY = 'st-muted'
 const midi = (n: number) => 440 * Math.pow(2, (n - 69) / 12)
@@ -468,6 +468,18 @@ class Ambience {
       case 'toggle-room':
         noise(5000, 500, 0.6, 0.05, 1.2)
         tone('triangle', midi(72), midi(72), 0.25, 0.04, 0.15)
+        break
+      // 8-bit sounds for the game console's menu
+      case 'blip':
+        tone('square', midi(84), midi(84), 0.05, 0.02)
+        break
+      case 'select':
+        tone('square', midi(76), midi(76), 0.07, 0.022)
+        tone('square', midi(88), midi(88), 0.12, 0.022, 0.07)
+        break
+      case 'power':
+        noise(900, 6000, 0.18, 0.025, 0.8)
+        tone('sine', 60, 58, 0.4, 0.03)
         break
     }
   }

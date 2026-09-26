@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { sectionById, washington, type ObjectId, type SectionId } from '../content/site'
-import { LAPTOP_ARRIVED, laptopScreenBox } from '../laptop/screenBox'
 import { ambience } from '../lib/audio'
 import { useReducedMotion } from '../lib/hooks'
 import { supportsWebGL } from '../lib/webgl'
 import { ROOM_PHOTO, roomObjects } from './objects'
 import { RoomView, type ProjectedSpot, type ProjectedZone } from './roomView'
+import { ZOOM_ARRIVED, zoomBox, zoomFrame, type ZoomTarget } from './zoom'
 
 const ids = Object.keys(roomObjects) as ObjectId[]
 
@@ -65,11 +65,11 @@ export function RoomPhoto({ canvas, img, ready, flat }: Pick<ReturnType<typeof u
 
 interface Props {
   onOpen: (id: SectionId) => void
-  /** True while the laptop's desktop is open: the camera flies into its screen. */
-  laptopOpen?: boolean
+  /** Where the camera has flown in to (the laptop or the game console), if anywhere. */
+  zoomTo?: ZoomTarget | null
 }
 
-export function RoomScene({ onOpen, laptopOpen = false }: Props) {
+export function RoomScene({ onOpen, zoomTo = null }: Props) {
   const spots = useRef<Record<string, HTMLButtonElement | null>>({})
   const windowZone = useRef<HTMLButtonElement>(null)
   const note = useRef<HTMLDivElement>(null)
@@ -104,8 +104,8 @@ export function RoomScene({ onOpen, laptopOpen = false }: Props) {
     }
   }, [])
 
-  // a deep link straight to the laptop skips the opening pull-back
-  const [intro] = useState(() => !laptopOpen)
+  // a deep link straight to the laptop or console skips the opening pull-back
+  const [intro] = useState(() => !zoomTo)
   const { canvas, img, view, ready, flat } = useRoomView({ interactive: true, intro, onFrame })
 
   // Labels show while the whole room is in view on arrival, then only on hover.
@@ -115,22 +115,23 @@ export function RoomScene({ onOpen, laptopOpen = false }: Props) {
     return () => window.clearTimeout(t)
   }, [ready])
 
-  // Fly into the laptop screen while its desktop is open, and back out after.
+  // Fly into the laptop or the TV cabinet while its overlay is open, and back out after.
   const first = useRef(true)
   useEffect(() => {
     const v = view.current
     if (!v) return
-    if (laptopOpen) {
-      v.focus(ROOM_PHOTO.laptopScreen, {
+    if (zoomTo) {
+      const target = zoomTo
+      v.focus(zoomFrame(target), {
         instant: first.current,
-        fit: laptopScreenBox,
-        done: () => window.dispatchEvent(new Event(LAPTOP_ARRIVED)),
+        fit: (w, h) => zoomBox(target, w, h),
+        done: () => window.dispatchEvent(new CustomEvent(ZOOM_ARRIVED, { detail: target })),
       })
     } else if (!first.current) {
       v.focus(null)
     }
     first.current = false
-  }, [laptopOpen, view])
+  }, [zoomTo, view])
 
   // Arrow keys move through the room when nothing else wants them.
   useEffect(() => {
@@ -166,7 +167,7 @@ export function RoomScene({ onOpen, laptopOpen = false }: Props) {
   }
 
   return (
-    <div className={`room-scene ${hint ? 'show-labels' : ''} ${laptopOpen ? 'is-zoomed' : ''}`}>
+    <div className={`room-scene ${hint ? 'show-labels' : ''} ${zoomTo ? 'is-zoomed' : ''}`}>
       <RoomPhoto canvas={canvas} img={img} ready={ready} flat={flat} />
       <div className="room-spots">
         <button
@@ -186,7 +187,7 @@ export function RoomScene({ onOpen, laptopOpen = false }: Props) {
         {ids.map((id) => {
           const def = roomObjects[id]
           const section = sectionById[def.section]
-          const below = def.spot.y < 0.22
+          const below = def.labelBelow ?? def.spot.y < 0.22
           return (
             <button
               key={id}
@@ -202,7 +203,7 @@ export function RoomScene({ onOpen, laptopOpen = false }: Props) {
                 onOpen(section.id)
               }}
               aria-label={`${section.roomLabel}. ${def.name}.`}
-              tabIndex={laptopOpen ? -1 : undefined}
+              tabIndex={zoomTo ? -1 : undefined}
             >
               <span className="spot-dot" aria-hidden="true" />
               <span className="spot-label" aria-hidden="true">

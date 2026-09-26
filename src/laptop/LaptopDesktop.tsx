@@ -9,20 +9,26 @@ import { useNow, useReducedMotion } from '../lib/hooks'
 import { navigate } from '../lib/router'
 import wallpaperLarge from '../assets/desk/wallpaper-2688.webp'
 import wallpaperSmall from '../assets/desk/wallpaper-1440.webp'
-import { LAPTOP_ARRIVED, laptopScreenBox } from './screenBox'
+import { useArrived, useScreenBox } from '../room/zoom'
 
 type Item =
   | { kind: 'project'; id: string; label: string; project: Project }
+  | { kind: 'cases'; id: 'cases'; label: string }
   | { kind: 'text'; id: 'how'; label: string }
   | { kind: 'resume'; id: 'resume'; label: string }
-  | { kind: 'link'; id: 'github' | 'mail'; label: string; href: string }
 
 const items: Item[] = [
   ...projects.map((p): Item => ({ kind: 'project', id: p.id, label: p.name, project: p })),
+  { kind: 'cases', id: 'cases', label: laptop.extras.cases.name },
   { kind: 'text', id: 'how', label: laptop.extras.howIBuild.name },
   { kind: 'resume', id: 'resume', label: laptop.extras.resume.name },
-  { kind: 'link', id: 'github', label: laptop.extras.github.name, href: links.github.url },
-  { kind: 'link', id: 'mail', label: laptop.extras.mail.name, href: `mailto:${site.email}` },
+]
+
+/** Shortcuts that leave the site, kept in a dock along the bottom like a Mac's. */
+const dock: { id: 'linkedin' | 'github' | 'mail'; label: string; href: string }[] = [
+  { id: 'linkedin', label: laptop.extras.linkedin.name, href: links.linkedin.url },
+  { id: 'github', label: laptop.extras.github.name, href: links.github.url },
+  { id: 'mail', label: laptop.extras.mail.name, href: `mailto:${site.email}` },
 ]
 
 const FOCUSABLE = 'a[href], button:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])'
@@ -39,19 +45,9 @@ export function LaptopDesktop({ compact, onClose }: Props) {
   const [openId, setOpenId] = useState<string | null>(null)
   const open = items.find((i) => i.id === openId) ?? null
   const iconRefs = useRef<Record<string, HTMLElement | null>>({})
-  const box = useScreenBox(!compact)
+  const box = useScreenBox(compact ? null : 'laptop')
   // show the desktop once the camera has landed on the screen, so the two line up
-  const [arrived, setArrived] = useState(compact)
-  useEffect(() => {
-    if (arrived) return
-    const land = () => setArrived(true)
-    window.addEventListener(LAPTOP_ARRIVED, land)
-    const fallback = window.setTimeout(land, 2400)
-    return () => {
-      window.removeEventListener(LAPTOP_ARRIVED, land)
-      window.clearTimeout(fallback)
-    }
-  }, [arrived])
+  const arrived = useArrived('laptop', compact)
 
   useLayoutEffect(() => {
     returnFocus.current = document.activeElement as HTMLElement | null
@@ -99,7 +95,6 @@ export function LaptopDesktop({ compact, onClose }: Props) {
   }
 
   const activate = (item: Item) => {
-    if (item.kind === 'link') return
     ambience.sfx('open')
     setOpenId(item.id)
   }
@@ -164,6 +159,29 @@ export function LaptopDesktop({ compact, onClose }: Props) {
           </aside>
         </div>
 
+        <nav className="desk-dock" aria-label="Dock">
+          {dock.map((d) => {
+            const external = d.href.startsWith('http')
+            return (
+              <a
+                key={d.id}
+                className="dock-item"
+                href={d.href}
+                target={external ? '_blank' : undefined}
+                rel={external ? 'noopener noreferrer' : undefined}
+                onClick={() => ambience.sfx('open')}
+                data-tip={d.label}
+              >
+                <DockArt id={d.id} />
+                <span className="sr-only">
+                  {d.label}
+                  {external ? ' (opens in a new tab)' : ''}
+                </span>
+              </a>
+            )
+          })}
+        </nav>
+
         <AnimatePresence>
           {open && (
             <DeskWindow key={open.id} item={open} compact={compact} reduced={reduced} onClose={closeWindow} />
@@ -172,17 +190,6 @@ export function LaptopDesktop({ compact, onClose }: Props) {
       </motion.div>
     </>
   )
-}
-
-/** The on-screen box of the laptop screen, kept in step with the window size. */
-function useScreenBox(framed: boolean) {
-  const [size, setSize] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }))
-  useEffect(() => {
-    const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight })
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
-  return framed ? laptopScreenBox(size.w, size.h) : null
 }
 
 function MenuBar({ onBack }: { onBack: () => void }) {
@@ -215,29 +222,10 @@ function MenuBar({ onBack }: { onBack: () => void }) {
 }
 
 function DeskIcon({ item, selected, onOpen, refFn }: { item: Item; selected: boolean; onOpen: () => void; refFn: (el: HTMLElement | null) => void }) {
-  const glyph = <IconArt item={item} />
-  const label = <span className="icon-label">{item.label}</span>
-  if (item.kind === 'link') {
-    const external = item.href.startsWith('http')
-    return (
-      <a
-        ref={refFn}
-        className="desk-icon"
-        href={item.href}
-        target={external ? '_blank' : undefined}
-        rel={external ? 'noopener noreferrer' : undefined}
-        onClick={() => ambience.sfx('open')}
-      >
-        {glyph}
-        {label}
-        {external && <span className="sr-only"> (opens in a new tab)</span>}
-      </a>
-    )
-  }
   return (
     <button ref={refFn} type="button" className={`desk-icon ${selected ? 'is-selected' : ''}`} onClick={onOpen} aria-haspopup="dialog">
-      {glyph}
-      {label}
+      <IconArt item={item} />
+      <span className="icon-label">{item.label}</span>
     </button>
   )
 }
@@ -277,19 +265,41 @@ function IconArt({ item }: { item: Item }) {
       </svg>
     )
   }
-  if (item.id === 'github') {
+  // the case studies folder
+  return (
+    <svg className="icon-art" viewBox="0 0 64 52" aria-hidden="true">
+      <path d="M3 9a4 4 0 0 1 4-4h15l5 5h30a4 4 0 0 1 4 4v3H3z" fill="#5f86b8" />
+      <rect x="3" y="14" width="58" height="35" rx="4" fill="#7ea6d6" />
+      <rect x="3" y="14" width="58" height="4" rx="2" fill="#a3c3e8" />
+      <g transform="translate(32 32)" fill="none" stroke="#2f5585" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.9">
+        <path d="M-9 8h18M-6 8V2M0 8v-9M6 8v-5" />
+      </g>
+    </svg>
+  )
+}
+
+function DockArt({ id }: { id: 'linkedin' | 'github' | 'mail' }) {
+  if (id === 'linkedin') {
     return (
-      <svg className="icon-art" viewBox="0 0 64 52" aria-hidden="true">
-        <rect x="8" y="3" width="48" height="46" rx="11" fill="#24292f" />
-        <path d="M26 18l-8 8 8 8M38 18l8 8-8 8M34 15l-4 22" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <svg className="dock-art" viewBox="0 0 48 48" aria-hidden="true">
+        <rect width="48" height="48" rx="11" fill="#0a66c2" />
+        <path d="M15 20v14M15 13.5v.5M22 34V20M22 26.5c0-3.6 2.2-6.5 5.5-6.5s5 2.4 5 6V34" stroke="#fff" strokeWidth="4" strokeLinecap="round" fill="none" />
+      </svg>
+    )
+  }
+  if (id === 'github') {
+    return (
+      <svg className="dock-art" viewBox="0 0 48 48" aria-hidden="true">
+        <rect width="48" height="48" rx="11" fill="#24292f" />
+        <path d="M19 16l-8 8 8 8M29 16l8 8-8 8M26.5 13l-5 22" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     )
   }
   return (
-    <svg className="icon-art" viewBox="0 0 64 52" aria-hidden="true">
-      <rect x="8" y="3" width="48" height="46" rx="11" fill="#3d8bfd" />
-      <rect x="16" y="15" width="32" height="22" rx="3" fill="#fff" />
-      <path d="M17 17l15 11 15-11" fill="none" stroke="#3d8bfd" strokeWidth="2.4" strokeLinejoin="round" />
+    <svg className="dock-art" viewBox="0 0 48 48" aria-hidden="true">
+      <rect width="48" height="48" rx="11" fill="#3d8bfd" />
+      <rect x="9" y="13" width="30" height="22" rx="3" fill="#fff" />
+      <path d="M10 15l14 10 14-10" fill="none" stroke="#3d8bfd" strokeWidth="2.4" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -364,6 +374,7 @@ function DeskWindow({ item, compact, reduced, onClose }: { item: Item; compact: 
         <span className="win-bar-end" />
       </div>
       {item.kind === 'project' && <ProjectWindow project={item.project} />}
+      {item.kind === 'cases' && <CasesWindow />}
       {item.kind === 'text' && <HowIBuildFile />}
       {item.kind === 'resume' && <ResumeFile onClose={onClose} />}
     </motion.div>
@@ -441,6 +452,51 @@ function ProjectWindow({ project }: { project: Project }) {
   )
 }
 
+function CasesWindow() {
+  const list = work.caseStudies.items
+  const [i, setI] = useState(0)
+  const c = list[i]
+  const file = (k: number) => `${list[k].title ?? `Case study ${k + 1}`}.md`
+  const steps: [string, string | null, string][] = [
+    ['Problem', c.problem, 'What was stuck.'],
+    ['What I changed', c.change, 'The fix, and how it got adopted.'],
+    ['Result', c.result, 'What it moved, in numbers.'],
+  ]
+  return (
+    <div className="win-body win-split">
+      <nav className="win-side" aria-label="Case studies">
+        <p className="side-head">Case studies</p>
+        {list.map((item, k) => (
+          <button key={item.id} type="button" className={`side-item ${k === i ? 'is-active' : ''}`} onClick={() => setI(k)} aria-pressed={k === i}>
+            <FileGlyph /> {file(k)}
+          </button>
+        ))}
+      </nav>
+      <article className="readme">
+        <p className="readme-path">~/Case studies/{file(i)}</p>
+        <h3>
+          {c.title ?? 'Case study in progress'} {!c.title && <span className="readme-status is-soon">Coming soon</span>}
+        </h3>
+        {c.org && <p className="readme-desc">{c.org}</p>}
+        {!c.title && <p>{work.caseStudies.placeholder}</p>}
+        {steps.map(([label, text, hint]) => (
+          <div key={label}>
+            <h4>{label}</h4>
+            <p className={text ? '' : 'readme-hint'}>{text ?? hint}</p>
+          </div>
+        ))}
+        {c.url && (
+          <p className="readme-actions">
+            <a className="readme-btn" href={c.url} target="_blank" rel="noopener noreferrer">
+              Read the full case study <ExternalIcon width={14} height={14} />
+            </a>
+          </p>
+        )}
+      </article>
+    </div>
+  )
+}
+
 function HowIBuildFile() {
   return (
     <div className="win-body txt">
@@ -492,6 +548,9 @@ function ResumeFile({ onClose }: { onClose: () => void }) {
               </a>
             </>
           )}
+          <a className="readme-btn is-ghost" href={links.linkedin.url} target="_blank" rel="noopener noreferrer">
+            LinkedIn <ExternalIcon width={14} height={14} />
+          </a>
           <button
             type="button"
             className="readme-btn is-ghost"

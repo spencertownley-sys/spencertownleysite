@@ -116,12 +116,14 @@
 }
 
 .spot-laptop .spot-dot::before,
+.spot-console .spot-dot::before,
 .spot-guitar .spot-dot::before,
 .spot-poster .spot-dot::before {
   animation-delay: -0.9s;
 }
 
 .spot-camera .spot-dot::before,
+.spot-books .spot-dot::before,
 .spot-backpack .spot-dot::before,
 .spot-tv .spot-dot::before {
   animation-delay: -1.8s;
@@ -228,6 +230,10 @@
 
 .room-hero .room-canvas {
   cursor: default;
+}
+
+.grid-open {
+  margin: 16px 18px 0;
 }
 
 .grid-intro {

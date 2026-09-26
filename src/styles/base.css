@@ -218,6 +218,39 @@ a {
   white-space: nowrap;
 }
 
+.wordmark-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.wordmark-open i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3fae5a;
+  box-shadow: 0 0 0 3px rgba(63, 174, 90, 0.2);
+  animation: open-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes open-pulse {
+  50% {
+    box-shadow: 0 0 0 5px rgba(63, 174, 90, 0.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wordmark-open i {
+    animation: none;
+  }
+}
+
 .skip-link {
   display: inline-flex;
   align-items: center;
@@ -479,6 +512,20 @@ a {
   font-size: 11.5px;
 }
 
+[data-mode='brain'] .wordmark-open {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 9.5px;
+  letter-spacing: -0.01em;
+  color: var(--violet);
+}
+
+[data-mode='brain'] .wordmark-open i {
+  background: var(--violet);
+  box-shadow: 0 0 8px var(--violet);
+  animation: none;
+}
+
 [data-mode='brain'] .wordmark,
 [data-mode='brain'] .skip-link,
 [data-mode='brain'] .mode-toggle,
@@ -604,7 +651,47 @@ a {
 }
 
 .is-compact .icon-tray {
-  gap: 6px;
+  gap: 4px;
+}
+
+.is-compact .tray-link {
+  width: 36px;
+  height: 36px;
+}
+
+/* on phones the availability line moves out of the header into the page intro */
+.is-compact .wordmark-open {
+  display: none;
+}
+
+.intro-open {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #2f6b3f;
+}
+
+.intro-open i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3fae5a;
+  box-shadow: 0 0 0 3px rgba(63, 174, 90, 0.2);
+}
+
+[data-mode='brain'] .intro-open {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 12.5px;
+  color: var(--violet);
+}
+
+[data-mode='brain'] .intro-open i {
+  background: var(--violet);
+  box-shadow: 0 0 8px var(--violet);
 }
 
 .is-compact .tray-link::after {
@@ -656,8 +743,8 @@ a {
     font-size: 15px;
   }
   .is-compact .tray-link {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
   }
 }
 

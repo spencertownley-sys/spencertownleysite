@@ -363,6 +363,10 @@ function BrainList({ onOpen, panelOpen }: Props) {
       <div className="brain-hero" aria-hidden="true">
         {failed ? <img src={brainSvg} alt="" draggable={false} /> : <canvas ref={canvas} className="brain-canvas" />}
       </div>
+      <p className="intro-open brain-open">
+        <i aria-hidden="true" />
+        {site.openTo}. {site.openToWhere}.
+      </p>
       <p className="brain-intro">{site.brainTouchHint}</p>
       <h2 className="brain-group-title">Across the site</h2>
       <ul className="brain-list">{group(false)}</ul>

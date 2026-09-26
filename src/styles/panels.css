@@ -321,6 +321,126 @@
   background: #fff7ea;
 }
 
+.open-to {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #2f6b3f;
+}
+
+.open-to i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3fae5a;
+  box-shadow: 0 0 0 3px rgba(63, 174, 90, 0.2);
+}
+
+.section-note {
+  font-size: 14px;
+  color: var(--p-muted);
+}
+
+.case-list {
+  display: grid;
+  gap: 12px;
+}
+
+.case-card .card-head {
+  align-items: baseline;
+}
+
+.case-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--red);
+}
+
+.case-card.is-slot {
+  border-style: dashed;
+  box-shadow: none;
+  background: #faf6ef;
+}
+
+.case-org {
+  margin: -4px 0 8px !important;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--p-muted);
+}
+
+.case-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 16px;
+  margin: 4px 0 6px;
+}
+
+.case-steps dt {
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8f5a2d;
+}
+
+.case-steps dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.slot-hint {
+  color: var(--p-muted);
+  font-style: italic;
+}
+
+.book-list {
+  display: grid;
+  gap: 12px;
+}
+
+.book-card {
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--p-card);
+  border: 1px solid var(--p-line);
+}
+
+.book-card.is-slot {
+  border-style: dashed;
+  background: #faf6ef;
+}
+
+.book-cover {
+  display: grid;
+  place-items: end center;
+  height: 100px;
+  padding: 10px 6px;
+  border-radius: 3px 8px 8px 3px;
+  background: linear-gradient(90deg, #1f2f4a 0 8px, #2b4066 8px);
+  box-shadow: 0 6px 14px rgba(20, 20, 40, 0.25);
+  color: #f3dfaa;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.case-steps dd.is-hint {
+  color: var(--p-muted);
+  font-style: italic;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -1276,4 +1396,9 @@
 [data-mode='brain'] .region-list .count {
   background: #0a1a2a;
   color: #3ddcff;
+}
+
+[data-mode='brain'] .case-card.is-slot,
+[data-mode='brain'] .book-card.is-slot {
+  background: #f4fbfe;
 }

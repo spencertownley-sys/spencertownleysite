@@ -33,6 +33,10 @@ Common updates:
 |---|---|
 | Add the resume PDF | Put it in `public/` and set `work.resume.url` (for example `'/spencer-townley-resume.pdf'`) |
 | Fill "Currently obsessed with" | Add items to `currently.items` |
+| Add a case study | Fill a slot in `work.caseStudies.items` (title, problem, change, result, optional `url`) |
+| Connect a game | Give a slot in `games.items` a `title` and `url`, and add the game's origin to `frame-src` in `server.mjs` |
+| Add writing or a book | Fill a slot in `writing.samples` or `writing.books` |
+| Change the "open to" line | `site.openTo` and `site.openToWhere` |
 | Add landscape / wildlife photos | Put files in `public/photos/`, extend `photography.portraits` or replace `photography.placeholders` |
 | Use real ambient loops | Put files in `public/audio/` and set `audio.roomTrack` / `audio.brainTrack` |
 | Add a country | Append to `countries` (the `atlas` name must match `world-atlas` 50m naming) |
@@ -52,11 +56,17 @@ The icon is `public/favicon.svg` (the ST monogram), with `favicon-32.png` and `a
 
 `railway.json` tells Railway to run `npm run build` and start `npm start`, with a health check on `/healthz`. The server sets long-lived caching for hashed assets, serves precompressed files, adds security headers, and falls back to `index.html` for app routes like `/work`.
 
-The site runs in the Railway project `spencertownley-site`, service `web`, with `spencertownley.com` and `www.spencertownley.com` attached as custom domains. To finish the domain in Cloudflare DNS:
+The site runs in the Railway project `spencertownley-site`, service `web`, with `spencertownley.com` and `www.spencertownley.com` attached as custom domains. To connect the domain in Cloudflare:
 
-1. Add the `CNAME` records Railway shows under the service's **Settings > Networking** (one for `@`, one for `www`), proxied (orange cloud).
-2. If Railway also shows a `TXT` verification record, add it exactly as shown. The domain will not verify without it.
-3. Set **SSL/TLS > Overview** to **Full**. Not Full (Strict), which does not work with Railway.
+1. In Railway, open the `web` service, then **Settings > Networking > Public Networking**. Each custom domain shows two records to add: a `CNAME` and a `TXT` (ownership check). Keep this tab open.
+2. In Cloudflare, open `spencertownley.com`, then **DNS > Records**. Delete any existing `A`, `AAAA`, or `CNAME` records on `@` and `www` (parking or placeholder records).
+3. Add the records Railway shows, exactly as shown:
+   - `CNAME`, name `@`, target `gb9fv1ja.up.railway.app`, proxied (orange cloud). Cloudflare flattens it at the root automatically.
+   - `CNAME`, name `www`, target `dgl0tow8.up.railway.app`, proxied.
+   - The `TXT` record for each domain (name and value from Railway). The domain will not verify without it.
+4. **SSL/TLS > Overview**: choose **Full**. Not Full (Strict), which does not work with Railway.
+5. **SSL/TLS > Edge Certificates**: make sure **Universal SSL** is on.
+6. Wait for Railway to show a green check (and "Cloudflare proxy detected") next to each domain. Usually minutes, occasionally longer.
 
 The server redirects `www` to the apex, so no Cloudflare redirect rule is needed.
 

@@ -5,6 +5,9 @@ export const site = {
   name: 'Spencer Townley',
   role: 'Product, AI, and process improvement',
   intro: 'I find where work gets stuck, then build the thing that unsticks it.',
+  /** Availability, shown under the name and at the top of the career panel. */
+  openTo: 'Open to product, strategy, and AI roles',
+  openToWhere: 'Seattle or remote',
   roomHint: 'Every glowing dot opens something. Drag or scroll to move through the room.',
   gridHint: 'Tap anything to open it.',
   brainHint: 'Same rooms, rewired as how I think. Hover a node.',
@@ -17,6 +20,7 @@ export const site = {
 export const links = {
   travelInstagram: { label: 'Travel Instagram', handle: '@spencertownley', url: 'https://instagram.com/spencertownley' },
   photoInstagram: { label: 'Photography Instagram', handle: '@townley_photography', url: 'https://instagram.com/townley_photography' },
+  linkedin: { label: 'LinkedIn', handle: 'spencertownley', url: 'https://www.linkedin.com/in/spencertownley/' },
   github: { label: 'GitHub', handle: 'spencertownley-sys', url: 'https://github.com/spencertownley-sys' },
   youtube: { label: 'YouTube', handle: '@spencertownley', url: 'https://youtube.com/@spencertownley' },
   photoSite: { label: 'Townley Photography', handle: 'townleyphotography.com', url: 'https://townleyphotography.com' },
@@ -44,6 +48,8 @@ export type SectionId =
   | 'framework'
   | 'currently'
   | 'travel-and-planning'
+  | 'games'
+  | 'writing'
 
 export type ObjectId =
   | 'tv'
@@ -55,6 +61,8 @@ export type ObjectId =
   | 'passport'
   | 'guitar'
   | 'speaker'
+  | 'console'
+  | 'books'
 
 export interface Section {
   id: SectionId
@@ -158,6 +166,24 @@ export const sections: Section[] = [
     object: 'passport',
     roomLabel: 'Trip planning',
     brain: { region: 'Frontal pole', label: 'Trip planning', teaser: 'an example itinerary' },
+  },
+  {
+    id: 'games',
+    path: '/games',
+    title: 'Game shelf',
+    subtitle: 'Pick a cartridge',
+    object: 'console',
+    roomLabel: 'Games',
+    brain: { region: 'Cerebellum', label: 'Games', teaser: 'pick a cartridge' },
+  },
+  {
+    id: 'writing',
+    path: '/writing',
+    title: 'Writing',
+    subtitle: 'Samples now, books on the way',
+    object: 'books',
+    roomLabel: 'Writing',
+    brain: { region: 'Angular gyrus', label: 'Writing', teaser: 'samples and books in progress' },
   },
   {
     id: 'how-i-build',
@@ -265,6 +291,19 @@ export const projectsCopy = {
   howLink: 'The pattern behind all four',
 }
 
+export interface CaseStudy {
+  id: string
+  title: string | null
+  org: string | null
+  /** What was stuck. */
+  problem: string | null
+  /** What I changed. */
+  change: string | null
+  /** What it moved, ideally with a number. */
+  result: string | null
+  url: string | null
+}
+
 export const work = {
   eyebrow: 'For recruiters and hiring managers',
   lead:
@@ -278,6 +317,15 @@ export const work = {
   caseStudies: {
     placeholder:
       'More case studies, drawn from my work at Princess, are on the way. Each one will cover the problem, what I changed, and what it moved.',
+    /**
+     * One slot per case study. Fill in the fields (and `url` for a full write-up or PDF)
+     * and the slot turns into a real card, in the career panel and on the laptop.
+     */
+    items: [
+      { id: 'case-1', title: null, org: 'Princess', problem: null, change: null, result: null, url: null },
+      { id: 'case-2', title: null, org: 'Princess', problem: null, change: null, result: null, url: null },
+      { id: 'case-3', title: null, org: null, problem: null, change: null, result: null, url: null },
+    ] as CaseStudy[],
   },
   story: {
     placeholder:
@@ -370,6 +418,57 @@ export const travelAndPlanning = {
   ],
 }
 
+export interface Game {
+  id: string
+  /** Shown on the menu; null shows an empty cartridge slot. */
+  title: string | null
+  blurb: string | null
+  /** Where the game runs. It plays inside the TV (it must allow being framed; add its origin to frame-src in server.mjs). */
+  url: string | null
+}
+
+/** The console under the TV. Connect a game by giving its slot a title and url. */
+export const games = {
+  menuTitle: "SPENCER'S GAMES",
+  lead: 'A few small games I have made. Pick a cartridge.',
+  items: [
+    { id: 'game-1', title: null, blurb: null, url: null },
+    { id: 'game-2', title: null, blurb: null, url: null },
+    { id: 'game-3', title: null, blurb: null, url: null },
+    { id: 'game-4', title: null, blurb: null, url: null },
+  ] as Game[],
+  emptySlot: 'EMPTY SLOT',
+  comingSoon: 'This cartridge is still being soldered together. Check back soon.',
+}
+
+export interface WritingPiece {
+  id: string
+  title: string | null
+  /** Where it was published, or what it is. */
+  venue: string | null
+  blurb: string | null
+  url: string | null
+}
+
+export interface Book {
+  id: string
+  title: string | null
+  status: string
+  blurb: string | null
+  url: string | null
+}
+
+/** The books standing on the desk. Fill a slot in and it turns into a real entry. */
+export const writing = {
+  lead: 'Writing is how I think things through. Samples land here as they are published, and so will the books.',
+  samples: [
+    { id: 'sample-1', title: null, venue: null, blurb: null, url: null },
+    { id: 'sample-2', title: null, venue: null, blurb: null, url: null },
+    { id: 'sample-3', title: null, venue: null, blurb: null, url: null },
+  ] as WritingPiece[],
+  books: [{ id: 'book-1', title: null, status: 'In progress', blurb: null, url: null }] as Book[],
+}
+
 /** Shown when hovering the window in the Room. */
 export const washington = {
   eyebrow: 'Out the window',
@@ -384,8 +483,10 @@ export const laptop = {
   hint: 'Click a folder to look inside. Press Esc to step back into the room.',
   touchHint: 'Tap a folder to look inside. Tap Back to return to the room.',
   extras: {
+    cases: { name: 'Case studies' },
     howIBuild: { name: 'How I build.txt' },
     resume: { name: 'Resume.pdf' },
+    linkedin: { name: 'LinkedIn' },
     github: { name: 'GitHub' },
     mail: { name: 'Say hello' },
   },

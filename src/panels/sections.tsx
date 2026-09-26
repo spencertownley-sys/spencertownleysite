@@ -14,11 +14,14 @@ import {
   trips,
   video,
   work,
+  writing,
+  games,
   youtube,
+  type CaseStudy,
   type SectionId,
 } from '../content/site'
 import { countries, regions } from '../content/countries'
-import { CameraIcon, DocIcon, GithubIcon, InstagramIcon, MailIcon, YoutubeIcon } from '../components/icons'
+import { CameraIcon, DocIcon, GithubIcon, InstagramIcon, LinkedinIcon, MailIcon, YoutubeIcon } from '../components/icons'
 import { ExtLink, InLink, Placeholder, Section, Soon } from './ui'
 
 const CountriesMap = lazy(() => import('./CountriesMap'))
@@ -27,6 +30,10 @@ function Work() {
   return (
     <>
       <p className="eyebrow-line">{work.eyebrow}</p>
+      <p className="open-to">
+        <i aria-hidden="true" />
+        {site.openTo}. {site.openToWhere}.
+      </p>
       <p className="lead">{work.lead}</p>
       <ul className="chips" aria-label="Focus areas">
         {work.focus.map((f) => (
@@ -55,13 +62,27 @@ function Work() {
           )}
         </article>
         <article className="card">
-          <div className="card-head">
-            <h3>Case studies</h3>
-            <Soon>In progress</Soon>
+          <div className="card-icon">
+            <LinkedinIcon />
           </div>
-          <p>{work.caseStudies.placeholder}</p>
+          <div className="card-head">
+            <h3>LinkedIn</h3>
+          </div>
+          <p>The full work history, plus what colleagues have said.</p>
+          <ExtLink href={links.linkedin.url} icon={<LinkedinIcon width={17} height={17} />}>
+            Open LinkedIn
+          </ExtLink>
         </article>
       </div>
+
+      <Section title="Case studies">
+        <p className="section-note">{work.caseStudies.placeholder}</p>
+        <div className="case-list">
+          {work.caseStudies.items.map((c, i) => (
+            <CaseStudyCard key={c.id} c={c} n={i + 1} />
+          ))}
+        </div>
+      </Section>
 
       <Section title="Proof points, shipped" aside={<InLink to="/projects">All projects</InLink>}>
         <ul className="proof-list">
@@ -83,11 +104,49 @@ function Work() {
         <ExtLink href={`mailto:${site.email}`} icon={<MailIcon width={17} height={17} />}>
           {site.email}
         </ExtLink>
+        <ExtLink href={links.linkedin.url} icon={<LinkedinIcon width={17} height={17} />} variant="ghost">
+          LinkedIn
+        </ExtLink>
         <ExtLink href={links.github.url} icon={<GithubIcon width={17} height={17} />} variant="ghost">
           GitHub
         </ExtLink>
       </div>
     </>
+  )
+}
+
+/** A case study card; empty slots show the shape each one will take. */
+function CaseStudyCard({ c, n }: { c: CaseStudy; n: number }) {
+  const ready = !!c.title
+  const steps: [string, string | null, string][] = [
+    ['Problem', c.problem, 'What was stuck'],
+    ['What I changed', c.change, 'The fix, and how it got adopted'],
+    ['Result', c.result, 'What it moved, in numbers'],
+  ]
+  return (
+    <article className={`card case-card ${ready ? '' : 'is-slot'}`}>
+      <div className="card-head">
+        <span className="case-num" aria-hidden="true">
+          {String(n).padStart(2, '0')}
+        </span>
+        <h3>{c.title ?? 'Case study in progress'}</h3>
+        {!ready && <Soon />}
+      </div>
+      {c.org && <p className="case-org">{c.org}</p>}
+      <dl className="case-steps">
+        {steps.map(([label, text, hint]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd className={text ? '' : 'is-hint'}>{text ?? hint}</dd>
+          </div>
+        ))}
+      </dl>
+      {c.url && (
+        <ExtLink href={c.url} variant="ghost">
+          Read the case study
+        </ExtLink>
+      )}
+    </article>
   )
 }
 
@@ -375,6 +434,79 @@ function TravelAndPlanning() {
   )
 }
 
+function Games() {
+  return (
+    <>
+      <p className="lead">{games.lead}</p>
+      <div className="case-list">
+        {games.items.map((g, i) => (
+          <article key={g.id} className={`card case-card ${g.title ? '' : 'is-slot'}`}>
+            <div className="card-head">
+              <span className="case-num" aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <h3>{g.title ?? `Cartridge ${i + 1}`}</h3>
+              {!g.url && <Soon />}
+            </div>
+            <p className={g.blurb ? '' : 'slot-hint'}>{g.blurb ?? games.comingSoon}</p>
+            {g.url && <ExtLink href={g.url}>Play</ExtLink>}
+          </article>
+        ))}
+      </div>
+      <p className="aside-link">In the Room, the console under the TV plays these on the TV itself.</p>
+    </>
+  )
+}
+
+function Writing() {
+  return (
+    <>
+      <p className="lead">{writing.lead}</p>
+      <Section title="Writing samples">
+        <div className="case-list">
+          {writing.samples.map((w, i) => (
+            <article key={w.id} className={`card case-card ${w.title ? '' : 'is-slot'}`}>
+              <div className="card-head">
+                <span className="case-num" aria-hidden="true">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <h3>{w.title ?? 'Writing sample in progress'}</h3>
+                {!w.url && <Soon />}
+              </div>
+              {w.venue && <p className="case-org">{w.venue}</p>}
+              <p className={w.blurb ? '' : 'slot-hint'}>{w.blurb ?? 'An essay or article, with a link to read it.'}</p>
+              {w.url && (
+                <ExtLink href={w.url} variant="ghost">
+                  Read it
+                </ExtLink>
+              )}
+            </article>
+          ))}
+        </div>
+      </Section>
+      <Section title="Books">
+        <div className="book-list">
+          {writing.books.map((b) => (
+            <article key={b.id} className={`book-card ${b.title ? '' : 'is-slot'}`}>
+              <div className="book-cover" aria-hidden="true">
+                <span>{b.title ?? 'Untitled'}</span>
+              </div>
+              <div>
+                <div className="card-head">
+                  <h3>{b.title ?? 'A book, in progress'}</h3>
+                  <Soon>{b.status}</Soon>
+                </div>
+                <p className={b.blurb ? '' : 'slot-hint'}>{b.blurb ?? 'Details land here once there is a title worth sharing.'}</p>
+                {b.url && <ExtLink href={b.url}>Find the book</ExtLink>}
+              </div>
+            </article>
+          ))}
+        </div>
+      </Section>
+    </>
+  )
+}
+
 export const sectionContent: Record<SectionId, () => ReactNode> = {
   work: Work,
   projects: Projects,
@@ -389,4 +521,6 @@ export const sectionContent: Record<SectionId, () => ReactNode> = {
   framework: Framework,
   currently: Currently,
   'travel-and-planning': TravelAndPlanning,
+  games: Games,
+  writing: Writing,
 }

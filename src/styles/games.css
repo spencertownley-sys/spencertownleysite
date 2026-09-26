@@ -1,0 +1,309 @@
+/* The game console: an old CRT menu laid over the TV's glass. */
+
+.tv-backdrop {
+  position: fixed;
+  z-index: 59;
+  top: var(--bar-h);
+  bottom: var(--foot-h);
+  left: 0;
+  right: 0;
+  cursor: zoom-out;
+}
+
+.tv-screen {
+  position: fixed;
+  z-index: 60;
+  outline: none;
+  /* the glass of a 60s set: very rounded, a little bulged */
+  border-radius: 11% / 14%;
+  overflow: hidden;
+  background: #03060c;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 0 28px rgba(120, 180, 255, 0.18);
+  font-family: 'Press Start 2P', var(--font-mono);
+  color: #eaf2ff;
+  -webkit-font-smoothing: none;
+}
+
+.crt {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 50% 42%, #1d3563 0%, #0c1733 55%, #03060e 100%);
+  transform-origin: 50% 50%;
+}
+
+/* scanlines and the curved-glass vignette */
+.crt::before,
+.crt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.crt::before {
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.28) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
+
+.crt::after {
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 58%, rgba(0, 0, 0, 0.55) 100%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.1) 0%, transparent 32%);
+}
+
+.crt-logical {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 50% 50%;
+}
+
+.crt-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 22px 26px 16px;
+  text-shadow:
+    0 0 6px rgba(140, 200, 255, 0.55),
+    1px 0 0 rgba(255, 80, 80, 0.35),
+    -1px 0 0 rgba(80, 200, 255, 0.35);
+}
+
+.crt-title {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #ffd35a;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.crt-star {
+  display: inline-block;
+  color: #ff6b8a;
+  animation: crt-blink 1s steps(2) infinite;
+}
+
+.crt-sub {
+  margin: 8px 0 14px;
+  font-size: 7px;
+  color: #8fb4ff;
+}
+
+.crt-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: grid;
+  gap: 6px;
+}
+
+.crt-row {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 8px;
+  line-height: 1;
+  text-align: left;
+  text-shadow: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+.crt-row.is-on {
+  background: #ffd35a;
+  color: #1a1030;
+  text-shadow: none;
+}
+
+.crt-arrow {
+  animation: crt-blink 0.8s steps(2) infinite;
+}
+
+.crt-tag {
+  font-size: 7px;
+  color: #8fb4ff;
+}
+
+.crt-row.is-on .crt-tag {
+  color: #5a2a8a;
+}
+
+.crt-foot {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  font-size: 6px;
+  color: #8fb4ff;
+}
+
+.crt-foot kbd {
+  font: inherit;
+  color: #eaf2ff;
+}
+
+.crt-exit {
+  padding: 3px 4px;
+  border: 0;
+  background: none;
+  color: #eaf2ff;
+  font: inherit;
+  cursor: pointer;
+  text-shadow: inherit;
+}
+
+.crt-exit:hover,
+.crt-exit:focus-visible {
+  color: #ffd35a;
+  outline: none;
+}
+
+.crt-soon {
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.crt-msg {
+  margin: 0;
+  font-size: 12px;
+  color: #ff6b8a;
+}
+
+.crt-small {
+  margin: 0;
+  max-width: 240px;
+  font-size: 7px;
+  line-height: 1.7;
+  color: #cfe0ff;
+}
+
+.crt-soon .crt-exit {
+  font-size: 8px;
+  margin-top: 6px;
+}
+
+.crt-blink {
+  animation: crt-blink 1s steps(2) infinite;
+}
+
+/* a little pixel cartridge */
+.crt-cart {
+  position: relative;
+  width: 44px;
+  height: 36px;
+  background: #9aa2b1;
+  box-shadow:
+    inset -4px -4px 0 #6d7482,
+    inset 4px 4px 0 #c3c9d4;
+}
+
+.crt-cart span {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 8px;
+  height: 14px;
+  background: linear-gradient(90deg, #ff6b8a, #ffd35a, #5ad1ff);
+}
+
+@keyframes crt-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* a connected game */
+.crt-game {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: #000;
+}
+
+.crt-game iframe {
+  position: absolute;
+  inset: 0 0 26px;
+  width: 100%;
+  height: calc(100% - 26px);
+  border: 0;
+}
+
+.crt-game-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 26px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+  font-family: var(--font-room);
+}
+
+.crt-game-bar button {
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* phones: the TV screen fills the width */
+.tv-compact-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 59;
+  background: radial-gradient(ellipse at 50% 30%, #2a1d14, #0d0906);
+}
+
+.tv-compact-back {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #fffaf1;
+  color: #231c1a;
+  font-family: var(--font-room);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.tv-screen.is-compact {
+  border-radius: 7% / 9%;
+  border: 10px solid #5a3b24;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-star,
+  .crt-arrow,
+  .crt-blink {
+    animation: none;
+  }
+}
