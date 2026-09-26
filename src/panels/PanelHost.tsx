@@ -5,7 +5,6 @@ import { CloseIcon } from '../components/icons'
 import { ambience } from '../lib/audio'
 import { useReducedMotion } from '../lib/hooks'
 import type { Mode } from '../lib/router'
-import { ObjectArt } from '../room/ObjectArt'
 import { roomObjects } from '../room/objects'
 import { sectionContent } from './sections'
 
@@ -130,12 +129,12 @@ function Panel({
       transition={{ type: 'spring', stiffness: 280, damping: 32 }}
     >
       <header className="panel-head">
-        {obj ? (
+        {obj && mode === 'room' ? (
           <span className="panel-art" aria-hidden="true">
-            <ObjectArt src={obj.src} crop={obj.crop} />
+            <img src={obj.crop} alt="" width={640} height={480} />
           </span>
         ) : (
-          <span className="panel-glyph" aria-hidden="true" />
+          <span className={`panel-glyph ${section.brain.only ? 'is-only' : ''}`} aria-hidden="true" />
         )}
         <div className="panel-titles">
           <p className="panel-eyebrow">{eyebrow}</p>

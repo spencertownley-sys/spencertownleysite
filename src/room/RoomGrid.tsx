@@ -1,13 +1,17 @@
 import { motion } from 'framer-motion'
 import { sectionById, site, type SectionId } from '../content/site'
 import { ambience } from '../lib/audio'
-import { ObjectArt } from './ObjectArt'
 import { gridOrder, roomObjects } from './objects'
+import { RoomPhoto, useRoomView } from './RoomScene'
 
-/** Mobile Room: the same objects as a simple, scrollable grid. */
+/** Mobile Room: the room drifting by up top, then the same objects as a simple grid. */
 export function RoomGrid({ onOpen }: { onOpen: (id: SectionId) => void }) {
+  const room = useRoomView({ interactive: false })
   return (
     <div className="room-grid-wrap">
+      <div className="room-hero">
+        <RoomPhoto canvas={room.canvas} img={room.img} ready={room.ready} flat={room.flat} />
+      </div>
       <p className="grid-intro">
         {site.intro} <span className="grid-hint">{site.gridHint}</span>
       </p>
@@ -24,15 +28,15 @@ export function RoomGrid({ onOpen }: { onOpen: (id: SectionId) => void }) {
                   ambience.sfx('open')
                   onOpen(section.id)
                 }}
-                whileTap={{ scale: 0.96, rotate: i % 2 ? 1.5 : -1.5 }}
+                whileTap={{ scale: 0.97 }}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0, transition: { delay: 0.03 * i } }}
               >
-                <span className="tile-art">
-                  <ObjectArt src={def.src} crop={def.crop} />
+                <img className="tile-photo" src={def.crop} alt="" loading="lazy" decoding="async" width={640} height={480} />
+                <span className="tile-text">
+                  <span className="tile-label">{section.roomLabel}</span>
+                  <span className="tile-sub">{section.subtitle}</span>
                 </span>
-                <span className="tile-label">{section.roomLabel}</span>
-                <span className="tile-sub">{section.subtitle}</span>
               </motion.button>
             </li>
           )

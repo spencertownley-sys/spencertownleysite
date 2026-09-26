@@ -11,11 +11,12 @@
   --brown: #8b5e3c;
   --night: #05070a;
   --blue: #3ddcff;
-  --mint: #3dffb0;
+  --violet: #d65cff;
 
   --font-room: 'Nunito Variable', ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
   --font-orbit: 'Orbitron Variable', var(--font-mono);
+  --font-grotesk: 'Space Grotesk Variable', system-ui, sans-serif;
 
   --bar-h: 68px;
   --foot-h: 64px;
@@ -192,8 +193,15 @@ a {
 .wordmark {
   display: grid;
   text-decoration: none;
-  line-height: 1.1;
+  line-height: 1.15;
   min-width: 0;
+  padding: 6px 14px 7px;
+  border-radius: 16px;
+  background: rgba(255, 250, 242, 0.8);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 24px rgba(40, 24, 12, 0.2);
 }
 
 .wordmark-name {
@@ -221,22 +229,21 @@ a {
   text-decoration: none;
   white-space: nowrap;
   background: var(--red);
-  color: var(--paper);
-  border: 2.5px solid var(--ink);
-  box-shadow: 3px 3px 0 var(--ink);
+  color: #fff;
+  border: 0;
+  box-shadow: 0 8px 22px rgba(150, 50, 25, 0.38);
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
 }
 
 .skip-link:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 var(--ink);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(150, 50, 25, 0.45);
 }
 
 .skip-link:active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--ink);
+  transform: translateY(1px);
 }
 
 .mode-toggle {
@@ -244,9 +251,11 @@ a {
   padding: 4px;
   gap: 2px;
   border-radius: 999px;
-  background: var(--paper);
-  border: 2.5px solid var(--ink);
-  box-shadow: 3px 3px 0 var(--ink);
+  background: rgba(255, 250, 242, 0.8);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 24px rgba(40, 24, 12, 0.2);
 }
 
 .mode-toggle button {
@@ -287,14 +296,15 @@ a {
   cursor: pointer;
   font-weight: 800;
   font-size: 14px;
-  background: var(--paper);
-  border: 2.5px solid var(--ink);
-  box-shadow: 3px 3px 0 var(--ink);
+  background: rgba(255, 250, 242, 0.8);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 24px rgba(40, 24, 12, 0.2);
 }
 
 .mute-button:active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--ink);
+  transform: translateY(1px);
 }
 
 .eq {
@@ -364,14 +374,16 @@ a {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--paper);
-  border: 2.5px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
+  background: rgba(255, 250, 242, 0.8);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 24px rgba(40, 24, 12, 0.2);
   transition: transform 0.15s ease;
 }
 
 .tray-link:hover {
-  transform: translateY(-3px) rotate(-6deg);
+  transform: translateY(-2px);
 }
 
 .tray-link::after {
@@ -400,17 +412,20 @@ a {
 
 .room-intro {
   margin: 0;
-  max-width: 540px;
-  padding: 7px 16px;
+  max-width: 560px;
+  padding: 8px 18px;
   text-align: center;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.35;
   color: var(--ink);
   text-wrap: balance;
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
-  border: 2px solid var(--ink);
   border-radius: 16px;
+  background: rgba(255, 250, 242, 0.8);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 24px rgba(40, 24, 12, 0.2);
   pointer-events: none;
 }
 
@@ -435,13 +450,15 @@ a {
   font-weight: 800;
   font-size: 14px;
   text-decoration: none;
-  background: var(--paper);
-  border: 2.5px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
+  background: rgba(255, 250, 242, 0.8);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 24px rgba(40, 24, 12, 0.2);
 }
 
 .contact-link:hover {
-  background: var(--mustard);
+  background: #fff;
 }
 
 /* ---------- brain skin for the chrome ---------- */
@@ -462,6 +479,7 @@ a {
   font-size: 11.5px;
 }
 
+[data-mode='brain'] .wordmark,
 [data-mode='brain'] .skip-link,
 [data-mode='brain'] .mode-toggle,
 [data-mode='brain'] .mute-button,
@@ -525,9 +543,19 @@ a {
 
 .is-compact .top-bar {
   grid-template-columns: 1fr auto auto;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(8px);
-  border-bottom: 2.5px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 25%, transparent);
+}
+
+.is-compact .wordmark,
+.is-compact[data-mode='brain'] .wordmark {
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .is-compact .wordmark-role {
@@ -562,9 +590,10 @@ a {
 .is-compact .bottom-bar {
   padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
   height: auto;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(8px);
-  border-top: 2.5px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid color-mix(in srgb, var(--line) 25%, transparent);
 }
 
 .is-compact .skip-link {

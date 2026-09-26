@@ -1,7 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import brainSrc from '../assets/brain.svg'
-import { BrainScene } from './brain/BrainScene'
 import { BottomBar, TopBar } from './components/Chrome'
 import { sectionForPath, site, type SectionId, sectionById } from './content/site'
 import { FxCanvas } from './fx/FxCanvas'
@@ -11,6 +9,10 @@ import { closeToScene, navigate, setMode, useLocation, type Mode } from './lib/r
 import { PanelHost } from './panels/PanelHost'
 import { RoomGrid } from './room/RoomGrid'
 import { RoomScene } from './room/RoomScene'
+
+// three.js only loads when Brain mode is first needed (or once the page is idle).
+const loadBrain = () => import('./brain/BrainScene')
+const BrainScene = lazy(loadBrain)
 
 interface Layer {
   key: number
@@ -51,18 +53,18 @@ export default function App() {
     document.title = section ? `${section.title} | ${site.name}` : `${site.name} | ${site.role}`
   }, [section])
 
-  // Warm the Brain art so the first toggle is instant.
+  // Fetch the Brain code in the background so the first toggle is quick.
   useEffect(() => {
-    const id = window.setTimeout(() => {
-      const img = new Image()
-      img.src = brainSrc
-      img.decode?.().catch(() => {})
-    }, 1200)
+    const id = window.setTimeout(() => void loadBrain().catch(() => {}), 2500)
     return () => window.clearTimeout(id)
   }, [])
 
   const scene = (m: Mode) =>
-    m === 'room' ? compact ? <RoomGrid onOpen={open} /> : <RoomScene onOpen={open} /> : <BrainScene onOpen={open} panelOpen={!!section} />
+    m === 'room' ? compact ? <RoomGrid onOpen={open} /> : <RoomScene onOpen={open} /> : (
+        <Suspense fallback={<div className="brain-scene" />}>
+          <BrainScene onOpen={open} panelOpen={!!section} />
+        </Suspense>
+      )
 
   return (
     <div className={`app ${compact ? 'is-compact' : ''} ${section ? 'panel-open' : ''}`} data-mode={mode}>

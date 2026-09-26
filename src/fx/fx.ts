@@ -131,7 +131,7 @@ class Fx {
     this.ctx = canvas.getContext('2d')
     this.sprites = {
       blue: sprite('rgba(61,220,255,0.55)', 96),
-      mint: sprite('rgba(61,255,176,0.45)', 96),
+      violet: sprite('rgba(214,92,255,0.42)', 96),
       warm: sprite('rgba(217,164,65,0.22)', 96),
     }
     this.resize()
@@ -260,7 +260,7 @@ class Fx {
         const life = 1 - (now - p.t) / TRAIL_MS
         const r = (brain ? 34 : 30) * (0.45 + 0.55 * life)
         ctx.globalAlpha = life * (brain ? 0.55 : 0.9)
-        const s = brain ? (i % 3 === 0 ? this.sprites.mint : this.sprites.blue) : this.sprites.warm
+        const s = brain ? (i % 3 === 0 ? this.sprites.violet : this.sprites.blue) : this.sprites.warm
         ctx.drawImage(s, p.x - r, p.y - r, r * 2, r * 2)
       }
       ctx.globalAlpha = 1

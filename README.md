@@ -1,17 +1,17 @@
 # spencertownley.com
 
-Personal portfolio for Spencer Townley. Two toggleable experiences over the same content: an illustrated **Room** and a sci-fi **Brain**. The full product brief lives in [`CLAUDE.md`](./CLAUDE.md).
+Personal portfolio for Spencer Townley. Two toggleable experiences over the same content: a photoreal **Room** you drift through and a rotating holographic **Brain**. The full product brief lives in [`CLAUDE.md`](./CLAUDE.md).
 
 ## Stack
 
 - React 19 + Vite + TypeScript
-- Framer Motion for hover states, idle motion, and the Room/Brain transition
-- One canvas layer (`src/fx/fx.ts`) for the Brain pixel dissolve and the cursor light trail
+- **Room**: a photoreal room photo plus a depth map, rendered by a small WebGL shader (`src/room/roomView.ts`) so the camera drifts slowly through the space with real parallax. Hotspots are projected with the same math so they stay pinned to the objects. Falls back to a panning image without WebGL.
+- **Brain**: a procedural holographic brain in three.js (`src/brain/brainGL.ts`, lazy loaded) that rotates at 6 rpm. Nodes are pinned to 3D points on it and their labels follow every frame. Falls back to the flat brain artwork and a stacked list without WebGL.
+- Framer Motion for UI motion and the Room/Brain transition
+- One 2D canvas (`src/fx/fx.ts`) for the Brain pixel dissolve and the cursor light trail
 - Web Audio for the ambient sound beds (generated in code, no audio files)
 - `d3-geo` + `world-atlas` for the countries map (lazy loaded)
 - A dependency-free Node static server (`server.mjs`) for Railway
-
-No backend, no database, no accounts.
 
 ## Commands
 
@@ -36,6 +36,13 @@ Common updates:
 | Add landscape / wildlife photos | Put files in `public/photos/`, extend `photography.portraits` or replace `photography.placeholders` |
 | Use real ambient loops | Put files in `public/audio/` and set `audio.roomTrack` / `audio.brainTrack` |
 | Add a country | Append to `countries` (the `atlas` name must match `world-atlas` 50m naming) |
+| Swap the room photo | See "Room photo" below |
+
+## Room photo
+
+The room is an AI-generated photo (`assets/room/room-source.jpg`, 3840 x 1648) with a depth map estimated by Depth Anything V2. Served files live in `public/room/`: the photo at several widths, `depth.png`, and a close-up crop per object in `crops/`. Hotspot positions (0..1 across the photo) and their depth values are in `src/room/objects.ts`.
+
+To use a different photo (for example a real photo of your own space), export the same set of files at the same names, update the spots in `objects.ts`, and update `ROOM_PHOTO.aspect` if the proportions change.
 
 ## Deploy (Railway)
 

@@ -1,14 +1,13 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
-import brainSrc from '../../assets/brain.svg'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import brainSvg from '../../assets/brain.svg'
 import { sectionById, sections, site, type SectionId } from '../content/site'
 import { fx } from '../fx/fx'
 import { ambience } from '../lib/audio'
 import { useMediaQuery, useReducedMotion } from '../lib/hooks'
-import { BRAIN_STAGE, placeNodes, type PlacedNode } from './nodes'
+import { supportsWebGL } from '../lib/webgl'
+import { BLUE_HEX, BrainGL, VIOLET_HEX, type FrameInfo } from './brainGL'
+import { brainNodes } from './nodes'
 
-const BLUE = '#3DDCFF'
-const MINT = '#3DFFB0'
-const nodes = placeNodes()
 export const BRAIN_COMPACT_QUERY = '(max-width: 639px), (max-height: 479px), (max-aspect-ratio: 5/6)'
 
 interface Props {
@@ -21,6 +20,12 @@ interface Parts {
   lines: SVGGeometryElement[]
   anchor: Element | null
   hide: Element[]
+}
+
+const colorFor = (id: SectionId) => (sectionById[id].brain.only ? VIOLET_HEX : BLUE_HEX)
+const smooth = (a: number, b: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
+  return t * t * (3 - 2 * t)
 }
 
 /** Shared dissolve / reassemble wiring for one node. */
@@ -41,121 +46,218 @@ function useDissolve() {
     parts.hide.forEach((el) => el.setAttribute('data-fx', ok ? 'dissolved' : 'faded'))
     ambience.sfx('dissolve')
   }, [])
-  const reassemble = useCallback((key: string, parts: Parts) => {
-    if (!active.current.has(key)) return
+  const reassemble = useCallback((key: string, parts: Parts, done?: () => void) => {
+    if (!active.current.has(key)) return done?.()
     active.current.delete(key)
-    fx.reassemble(key, () => parts.hide.forEach((el) => el.removeAttribute('data-fx')))
+    fx.reassemble(key, () => {
+      parts.hide.forEach((el) => el.removeAttribute('data-fx'))
+      done?.()
+    })
   }, [])
   return { dissolve, reassemble }
 }
 
-export function BrainScene(props: Props) {
+/** Starts the WebGL brain on a canvas, falling back to the flat artwork if WebGL is unavailable. */
+function useBrainGL(canvas: React.RefObject<HTMLCanvasElement | null>, quality: 'high' | 'low', onFrame?: (f: FrameInfo) => void) {
+  const reduced = useReducedMotion()
+  const gl = useRef<BrainGL | null>(null)
+  const frame = useRef(onFrame)
+  const failed = !supportsWebGL()
+  useEffect(() => {
+    frame.current = onFrame
+  })
+  useEffect(() => {
+    const el = canvas.current
+    if (!el) return
+    try {
+      gl.current = new BrainGL({ canvas: el, nodes: brainNodes, quality, reducedMotion: reduced, onFrame: (f) => frame.current?.(f) })
+    } catch (err) {
+      console.warn('WebGL brain could not start', err)
+    }
+    return () => {
+      gl.current?.dispose()
+      gl.current = null
+    }
+  }, [canvas, quality, reduced])
+  return { gl, failed }
+}
+
+export default function BrainScene(props: Props) {
   const compact = useMediaQuery(BRAIN_COMPACT_QUERY)
-  return compact ? <BrainList {...props} /> : <BrainStage {...props} />
+  // Without WebGL there is nothing to pin labels to, so use the stacked list everywhere.
+  return compact || !supportsWebGL() ? <BrainList {...props} /> : <BrainStage {...props} />
+}
+
+interface NodeEls {
+  tag?: HTMLButtonElement | null
+  line?: SVGLineElement | null
+  dot?: SVGCircleElement | null
+  ring?: SVGCircleElement | null
+  group?: SVGGElement | null
+  w?: number
+  h?: number
 }
 
 function BrainStage({ onOpen }: Props) {
-  const reduced = useReducedMotion()
+  const canvas = useRef<HTMLCanvasElement>(null)
+  const els = useRef<Record<string, NodeEls>>({})
+  const hovering = useRef<string | null>(null)
   const [hover, setHover] = useState<SectionId | null>(null)
-  const refs = useRef<Record<string, { label?: HTMLElement | null; line?: SVGPolylineElement | null; anchor?: SVGCircleElement | null; group?: SVGGElement | null }>>({})
   const { dissolve, reassemble } = useDissolve()
 
+  const measure = useCallback(() => {
+    for (const e of Object.values(els.current)) {
+      if (!e.tag) continue
+      e.w = e.tag.offsetWidth
+      e.h = e.tag.offsetHeight
+    }
+  }, [])
+
+  useEffect(() => {
+    measure()
+    document.fonts?.ready.then(measure).catch(() => {})
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [measure])
+
+  // Place every tag next to its projected anchor, fade the ones on the far side,
+  // and nudge overlapping tags apart. Runs once per rendered frame.
+  const onFrame = useCallback((f: FrameInfo) => {
+    const items = f.nodes.map((n) => {
+      const e = els.current[n.id] ?? {}
+      const vis = smooth(-0.2, 0.35, n.facing)
+      const dx = n.x - f.cx
+      const dy = n.y - f.cy
+      const len = Math.hypot(dx, dy) || 1
+      const ux = dx / len
+      const uy = dy / len
+      const reach = 26 + 22 * vis
+      const ax = n.x + ux * reach
+      const ay = n.y + uy * reach
+      const s = Math.max(-1, Math.min(1, ux * 2.6))
+      const w = e.w ?? 120
+      const h = e.h ?? 40
+      const left = ax - (w * (1 - s)) / 2
+      const top = ay - h / 2 + uy * (h / 2) * (1 - Math.abs(s))
+      return { n, e, vis, left, top, w, h, s, uy }
+    })
+    const shown = items.filter((i) => i.vis > 0.3).sort((a, b) => a.top - b.top)
+    for (let iter = 0; iter < 4; iter++) {
+      for (let i = 0; i < shown.length; i++) {
+        for (let j = i + 1; j < shown.length; j++) {
+          const a = shown[i]
+          const b = shown[j]
+          const ox = Math.min(a.left + a.w, b.left + b.w) - Math.max(a.left, b.left)
+          const oy = Math.min(a.top + a.h, b.top + b.h) - Math.max(a.top, b.top)
+          if (ox > 0 && oy > 0) {
+            const push = oy / 2 + 2
+            if (a.top <= b.top) {
+              a.top -= push
+              b.top += push
+            } else {
+              a.top += push
+              b.top -= push
+            }
+          }
+        }
+      }
+    }
+    for (const it of items) {
+      const { e, n, vis: v, left, top, w, h, s, uy } = it
+      if (e.tag) {
+        e.tag.style.transform = `translate3d(${left.toFixed(1)}px, ${top.toFixed(1)}px, 0)`
+        e.tag.style.opacity = (0.06 + 0.94 * v).toFixed(3)
+        e.tag.style.pointerEvents = v > 0.5 ? 'auto' : 'none'
+        e.tag.style.zIndex = String(Math.round(v * 10))
+      }
+      const attachX = s > 0.5 ? left : s < -0.5 ? left + w : left + (w * (1 - s)) / 2
+      const attachY = Math.abs(s) > 0.5 ? top + h / 2 : uy < 0 ? top + h : top
+      if (e.line) {
+        e.line.setAttribute('x1', n.x.toFixed(1))
+        e.line.setAttribute('y1', n.y.toFixed(1))
+        e.line.setAttribute('x2', attachX.toFixed(1))
+        e.line.setAttribute('y2', attachY.toFixed(1))
+        e.line.style.opacity = (0.08 + 0.72 * v).toFixed(3)
+      }
+      if (e.dot) {
+        e.dot.setAttribute('cx', n.x.toFixed(1))
+        e.dot.setAttribute('cy', n.y.toFixed(1))
+        e.dot.setAttribute('r', (2 + 3 * v).toFixed(2))
+        e.dot.style.opacity = (0.25 + 0.75 * v).toFixed(3)
+      }
+      if (e.ring) {
+        e.ring.setAttribute('cx', n.x.toFixed(1))
+        e.ring.setAttribute('cy', n.y.toFixed(1))
+        e.ring.style.opacity = (v * 0.9).toFixed(3)
+      }
+    }
+  }, [])
+
+  const { gl, failed } = useBrainGL(canvas, 'high', onFrame)
+
   const partsFor = (id: SectionId): Parts => {
-    const r = refs.current[id] ?? {}
-    const texts = r.label ? Array.from(r.label.querySelectorAll<HTMLElement>('[data-text]')) : []
+    const e = els.current[id] ?? {}
     return {
-      texts,
-      lines: r.line ? [r.line] : [],
-      anchor: r.anchor ?? null,
-      hide: [r.label, r.group].filter(Boolean) as Element[],
+      texts: e.tag ? Array.from(e.tag.querySelectorAll<HTMLElement>('[data-text]')) : [],
+      lines: e.line ? [e.line] : [],
+      anchor: e.dot ?? null,
+      hide: [e.tag, e.group].filter(Boolean) as Element[],
     }
   }
 
-  const enter = (n: PlacedNode) => {
-    setHover(n.id)
+  const enter = (id: SectionId) => {
+    hovering.current = id
+    gl.current?.setPaused(true)
+    setHover(id)
     ambience.sfx('hover')
-    dissolve(n.id, partsFor(n.id), sectionById[n.id].brain.only ? MINT : BLUE)
+    dissolve(id, partsFor(id), colorFor(id))
   }
-  const leave = (n: PlacedNode) => {
-    setHover((h) => (h === n.id ? null : h))
-    reassemble(n.id, partsFor(n.id))
+  const leave = (id: SectionId) => {
+    if (hovering.current === id) hovering.current = null
+    setHover((h) => (h === id ? null : h))
+    reassemble(id, partsFor(id), () => {
+      if (!hovering.current) gl.current?.setPaused(false)
+    })
   }
-  const open = (n: PlacedNode) => {
+  const open = (id: SectionId) => {
     ambience.sfx('open')
-    onOpen(n.id)
+    onOpen(id)
   }
 
-  const { width, height, brain } = BRAIN_STAGE
   const hovered = hover ? sectionById[hover] : null
-  const pct = (v: number, of: number) => `${(v / of) * 100}%`
 
   return (
     <div className="brain-scene">
-      <div className="brain-grid" aria-hidden="true" />
-      <div className="stage brain-stage" style={{ '--sw': width, '--sh': height } as CSSProperties}>
-        <div
-          className="brain-glow"
-          aria-hidden="true"
-          style={{ left: pct(brain.x, width), top: pct(brain.y, height), width: pct(brain.size, width), height: pct(brain.size, height) }}
-        />
-        <img
-          className="brain-art"
-          src={brainSrc}
-          alt="A glowing wireframe brain"
-          draggable={false}
-          style={{ left: pct(brain.x, width), top: pct(brain.y, height), width: pct(brain.size, width) }}
-        />
-        <svg className="brain-lines" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-          {nodes.map((n, i) => {
-            const only = sectionById[n.id].brain.only
-            const color = only ? MINT : BLUE
-            const d = `M ${n.ax} ${n.ay} L ${n.lx} ${n.ly}`
-            return (
-              <g key={n.id} className={`brain-node ${hover === n.id ? 'is-hover' : ''}`} style={{ color }}>
-                <g ref={(el) => void ((refs.current[n.id] ??= {}).group = el)} className="node-trace">
-                  <polyline
-                    ref={(el) => void ((refs.current[n.id] ??= {}).line = el)}
-                    points={`${n.ax},${n.ay} ${n.lx},${n.ly}`}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.6}
-                  />
-                  <circle cx={n.lx} cy={n.ly} r={4} fill="#05070A" stroke="currentColor" strokeWidth={1.6} />
-                  {!reduced && (
-                    <circle r={2.6} fill="currentColor" className="trace-pulse">
-                      <animateMotion dur={`${1.4 + (i % 4) * 0.25}s`} begin={`${(i * 1.7) % 7}s`} repeatCount="indefinite" path={d} keyPoints="0;1" keyTimes="0;1" calcMode="linear" />
-                    </circle>
-                  )}
-                </g>
-                {!reduced && <circle cx={n.ax} cy={n.ay} r={6} className="anchor-ring" style={{ animationDelay: `${(i % 5) * 0.6}s`, transformOrigin: `${n.ax}px ${n.ay}px` }} />}
-                <circle ref={(el) => void ((refs.current[n.id] ??= {}).anchor = el)} cx={n.ax} cy={n.ay} r={5.5} className="anchor-dot" fill="currentColor" />
-                <circle
-                  cx={n.ax}
-                  cy={n.ay}
-                  r={20}
-                  className="anchor-hit"
-                  onPointerEnter={() => enter(n)}
-                  onPointerLeave={() => leave(n)}
-                  onClick={() => open(n)}
-                />
-              </g>
-            )
-          })}
-        </svg>
-        {nodes.map((n) => {
+      {failed ? (
+        <img className="brain-fallback" src={brainSvg} alt="A glowing wireframe brain" />
+      ) : (
+        <canvas ref={canvas} className="brain-canvas" aria-label="A rotating holographic brain. Drag to spin it." role="img" />
+      )}
+      <svg className="brain-overlay" aria-hidden="true">
+        {brainNodes.map((n) => (
+          <g key={n.id} ref={(el) => void ((els.current[n.id] ??= {}).group = el)} style={{ color: colorFor(n.id) }} className={hover === n.id ? 'is-hover' : ''}>
+            <line ref={(el) => void ((els.current[n.id] ??= {}).line = el)} stroke="currentColor" strokeWidth={1.4} />
+            <circle ref={(el) => void ((els.current[n.id] ??= {}).ring = el)} r={9} className="anchor-ring" />
+          </g>
+        ))}
+        {brainNodes.map((n) => (
+          <circle key={n.id} ref={(el) => void ((els.current[n.id] ??= {}).dot = el)} r={4} className="anchor-dot" fill={colorFor(n.id)} />
+        ))}
+      </svg>
+      <div className="brain-tags">
+        {brainNodes.map((n) => {
           const s = sectionById[n.id]
           return (
             <button
               key={n.id}
               type="button"
-              ref={(el) => void ((refs.current[n.id] ??= {}).label = el)}
-              className={`brain-label side-${n.side} ${s.brain.only ? 'is-only' : ''}`}
-              style={{ left: pct(n.lx, width), top: pct(n.ly, height) }}
-              onPointerEnter={() => enter(n)}
-              onPointerLeave={() => leave(n)}
-              onFocus={() => enter(n)}
-              onBlur={() => leave(n)}
-              onClick={() => open(n)}
+              ref={(el) => void ((els.current[n.id] ??= {}).tag = el)}
+              className={`brain-tag ${s.brain.only ? 'is-only' : ''}`}
+              onPointerEnter={() => enter(n.id)}
+              onPointerLeave={() => leave(n.id)}
+              onFocus={() => enter(n.id)}
+              onBlur={() => leave(n.id)}
+              onClick={() => open(n.id)}
               aria-label={`${s.brain.label}: ${s.brain.teaser}. Opens ${s.title}.`}
             >
               <span className="region" data-text>
@@ -182,10 +284,10 @@ function BrainStage({ onOpen }: Props) {
       </div>
       <div className="brain-legend" aria-hidden="true">
         <span className="legend-item">
-          <i style={{ background: BLUE }} /> also in the room
+          <i style={{ background: BLUE_HEX }} /> also in the room
         </span>
         <span className="legend-item is-only">
-          <i style={{ background: MINT }} /> brain only
+          <i style={{ background: VIOLET_HEX }} /> brain only
         </span>
       </div>
     </div>
@@ -201,8 +303,10 @@ function listParts(li: HTMLLIElement | null | undefined): Parts {
   }
 }
 
-/** Mobile and portrait Brain: a stacked list of labeled nodes, dissolve on tap. */
+/** Mobile and portrait Brain: the rotating brain up top, then a stacked list of nodes. */
 function BrainList({ onOpen, panelOpen }: Props) {
+  const canvas = useRef<HTMLCanvasElement>(null)
+  const { failed } = useBrainGL(canvas, 'low')
   const { dissolve, reassemble } = useDissolve()
   const refs = useRef<Record<string, HTMLLIElement | null>>({})
   const pending = useRef<string | null>(null)
@@ -222,7 +326,7 @@ function BrainList({ onOpen, panelOpen }: Props) {
   const tap = (id: SectionId) => {
     if (pending.current) return
     pending.current = id
-    dissolve(id, listParts(refs.current[id]), sectionById[id].brain.only ? MINT : BLUE)
+    dissolve(id, listParts(refs.current[id]), colorFor(id))
     timer.current = window.setTimeout(() => {
       ambience.sfx('open')
       onOpen(id)
@@ -257,7 +361,7 @@ function BrainList({ onOpen, panelOpen }: Props) {
   return (
     <div className="brain-list-wrap">
       <div className="brain-hero" aria-hidden="true">
-        <img src={brainSrc} alt="" draggable={false} />
+        {failed ? <img src={brainSvg} alt="" draggable={false} /> : <canvas ref={canvas} className="brain-canvas" />}
       </div>
       <p className="brain-intro">{site.brainTouchHint}</p>
       <h2 className="brain-group-title">Across the site</h2>

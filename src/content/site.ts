@@ -5,7 +5,7 @@ export const site = {
   name: 'Spencer Townley',
   role: 'Product, AI, and process improvement',
   intro: 'I find where work gets stuck, then build the thing that unsticks it.',
-  roomHint: 'Everything in this room opens something.',
+  roomHint: 'Every glowing dot opens something. Drag or scroll to move through the room.',
   gridHint: 'Tap anything to open it.',
   brainHint: 'Same rooms, rewired as how I think. Hover a node.',
   brainTouchHint: 'Same rooms, rewired as how I think. Tap a node.',

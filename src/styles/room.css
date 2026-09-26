@@ -1,247 +1,237 @@
-/* Room mode: the illustrated scene and the mobile grid. */
+/* Room mode: a photoreal room with depth parallax, glowing hotspots, and the mobile grid. */
 
 .room-scene {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: var(--cream);
+  background: #2a1d14;
 }
 
-.room-layer {
-  pointer-events: none;
+.room-photo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #2a1d14;
 }
 
-.backdrop {
+.room-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.9s ease;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.room-canvas:active {
+  cursor: grabbing;
+}
+
+.room-photo.is-ready .room-canvas {
+  opacity: 1;
+}
+
+.room-fallback {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
-
-/* ---------- objects ---------- */
-
-.room-object {
-  position: absolute;
-  padding: 0;
-  margin: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  pointer-events: auto;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.room-object:focus-visible {
-  outline: none;
-}
-
-.room-object:focus-visible .object-art {
-  outline: 3px dashed var(--red);
-  outline-offset: 8px;
-  border-radius: 14px;
-}
-
-.object-body {
-  position: relative;
-  display: block;
-  transform-origin: 50% 92%;
-}
-
-.layer-wall .object-body {
-  transform-origin: 50% 10%;
-}
-
-.object-art {
-  position: relative;
-  display: block;
-  width: 100%;
-  overflow: hidden;
-}
-
-.object-art img {
-  position: absolute;
-  max-width: none;
-  height: auto;
-  pointer-events: none;
+  object-fit: cover;
+  filter: blur(16px) saturate(1.1);
+  transform: scale(1.08);
+  transition: opacity 1s ease;
   user-select: none;
   -webkit-user-drag: none;
 }
 
-.object-shadow {
-  position: absolute;
-  left: 12%;
-  right: 12%;
-  bottom: -2.5%;
-  height: 7%;
-  border-radius: 50%;
-  background: rgba(35, 28, 26, 0.2);
-  filter: blur(1.5px);
-}
-
-.obj-guitar .object-shadow {
-  left: 0;
-  right: 48%;
-  bottom: 0;
-}
-
-.obj-backpack .object-shadow {
-  left: 8%;
-  right: 20%;
-}
-
-.object-tag {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 12px);
-  white-space: nowrap;
-  font-family: var(--font-room);
-  font-weight: 800;
-  font-size: clamp(12.5px, 0.95cqw, 17px);
-  background: var(--paper);
-  color: var(--ink);
-  border: 2.5px solid var(--ink);
-  border-radius: 999px;
-  padding: 0.3em 0.95em;
-  box-shadow: 3px 3px 0 var(--ink);
+.room-photo.is-ready:not(.is-flat) .room-fallback {
   opacity: 0;
-  transform: translate(-50%, 8px) scale(0.9);
-  transition:
-    opacity 0.16s ease,
-    transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1);
-  pointer-events: none;
-  z-index: 5;
 }
 
-.object-tag.below {
-  bottom: auto;
-  top: calc(100% + 12px);
-  transform: translate(-50%, -8px) scale(0.9);
+/* no WebGL: the photo itself pans (sized and moved by RoomView) */
+.room-photo.is-flat .room-canvas {
+  display: none;
 }
 
-.room-object:hover .object-tag,
-.room-object:focus-visible .object-tag {
-  opacity: 1;
-  transform: translate(-50%, 0) scale(1);
+.room-photo.is-flat .room-fallback {
+  inset: auto;
+  left: 0;
+  top: 0;
+  max-width: none;
+  object-fit: fill;
+  filter: none;
+  transform-origin: 0 0;
 }
 
-/* ---------- ambient loops ---------- */
-
-.clouds {
-  animation: clouds 70s linear infinite;
+.room-photo.is-flat:not(.is-ready) .room-fallback {
+  filter: blur(16px);
 }
 
-@keyframes clouds {
-  to {
-    transform: translateX(var(--shift, -360px));
-  }
-}
+/* ---------- hotspots ---------- */
 
-.clock-second {
-  animation: tick 60s steps(60) infinite;
-}
-
-@keyframes tick {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.plant {
-  animation: sway 7s ease-in-out infinite;
-}
-
-@keyframes sway {
-  0%,
-  100% {
-    transform: rotate(-1.6deg);
-  }
-  50% {
-    transform: rotate(1.6deg);
-  }
-}
-
-.tv-screen {
-  position: absolute;
-  border-radius: 20% / 24%;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.tv-screen::before {
-  content: '';
-  position: absolute;
-  inset: -40%;
-  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.55) 50%, transparent 58%);
-  animation: sheen 5.5s ease-in-out infinite;
-}
-
-.tv-screen::after {
-  content: '';
+.room-spots {
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.12) 0 2px, transparent 2px 6px);
-  mix-blend-mode: soft-light;
-  animation: flicker 3.2s steps(2) infinite;
+  pointer-events: none;
 }
 
-@keyframes sheen {
-  0%,
-  55% {
-    transform: translateX(-60%);
+.room-spot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  will-change: transform, opacity;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.spot-dot {
+  position: absolute;
+  inset: 15px;
+  border-radius: 50%;
+  background: #fffaf1;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.28),
+    0 0 16px 5px rgba(255, 210, 150, 0.75);
+  transition: transform 0.2s ease;
+}
+
+.spot-dot::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 246, 230, 0.9);
+  animation: spot-pulse 2.6s ease-out infinite;
+}
+
+.spot-laptop .spot-dot::before,
+.spot-guitar .spot-dot::before,
+.spot-poster .spot-dot::before {
+  animation-delay: -0.9s;
+}
+
+.spot-camera .spot-dot::before,
+.spot-backpack .spot-dot::before,
+.spot-tv .spot-dot::before {
+  animation-delay: -1.8s;
+}
+
+@keyframes spot-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.95;
   }
-  85%,
+  80%,
   100% {
-    transform: translateX(60%);
+    transform: scale(1.9);
+    opacity: 0;
   }
 }
 
-@keyframes flicker {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.9;
-  }
+.room-spot:hover .spot-dot,
+.room-spot:focus-visible .spot-dot {
+  transform: scale(1.3);
 }
 
-.obj-speaker .object-art {
-  transform-origin: 50% 100%;
-  animation: thump 0.86s ease-in-out infinite;
+.room-spot:focus-visible {
+  outline: none;
 }
 
-@keyframes thump {
-  0%,
-  100% {
-    transform: scale(1, 1);
-  }
-  12% {
-    transform: scale(1.025, 0.975);
-  }
-  30% {
-    transform: scale(0.99, 1.02);
-  }
+.room-spot:focus-visible .spot-dot {
+  box-shadow:
+    0 0 0 3px var(--red),
+    0 0 16px 5px rgba(255, 210, 150, 0.75);
 }
 
-.obj-poster .object-art {
-  filter: drop-shadow(4px 5px 0 rgba(35, 28, 26, 0.14));
+.spot-label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 2px);
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 7px 13px 8px;
+  border-radius: 14px;
+  background: rgba(255, 250, 242, 0.9);
+  backdrop-filter: blur(10px) saturate(1.2);
+  box-shadow: 0 10px 28px rgba(30, 18, 8, 0.28);
+  color: var(--ink);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
+  pointer-events: none;
+}
+
+.room-spot.label-below .spot-label {
+  bottom: auto;
+  top: calc(100% + 2px);
+  transform: translate(-50%, -6px);
+}
+
+.spot-name {
+  font-weight: 800;
+  font-size: 14.5px;
+}
+
+.spot-object {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #7a6a5e;
+}
+
+.room-spot:hover .spot-label,
+.room-spot:focus-visible .spot-label,
+.show-labels .spot-label {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 /* ---------- mobile grid ---------- */
 
 .room-grid-wrap {
-  padding: calc(var(--bar-h) + 18px) 14px calc(var(--foot-h) + 28px);
-  max-width: 640px;
-  margin: 0 auto;
-  background-image: radial-gradient(#e7ddca 2px, transparent 2.4px);
-  background-size: 34px 34px;
   min-height: 100%;
+  padding: var(--bar-h) 0 calc(var(--foot-h) + 28px);
+  background: var(--cream);
+}
+
+.room-grid-wrap > * {
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.room-hero {
+  position: relative;
+  height: 44vh;
+  min-height: 250px;
+  max-height: 440px;
+  max-width: none;
+}
+
+.room-hero .room-photo {
+  border-radius: 0 0 26px 26px;
+}
+
+.room-hero .room-canvas {
+  cursor: default;
 }
 
 .grid-intro {
-  margin: 4px 4px 18px;
+  margin: 18px 18px 16px;
   font-size: 19px;
   font-weight: 800;
   line-height: 1.3;
@@ -254,11 +244,11 @@
 
 .room-grid {
   list-style: none;
-  margin: 0;
-  padding: 0;
+  margin: 0 auto;
+  padding: 0 14px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
 .room-grid li:first-child {
@@ -266,61 +256,47 @@
 }
 
 .grid-tile {
+  display: block;
   width: 100%;
   height: 100%;
-  display: grid;
-  justify-items: center;
-  align-content: start;
-  gap: 4px;
-  padding: 16px 12px 14px;
-  border-radius: 22px;
-  background: var(--paper);
-  border: 2.5px solid var(--ink);
-  box-shadow: 4px 4px 0 var(--ink);
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(60, 40, 20, 0.13);
+  text-align: left;
   cursor: pointer;
-  text-align: center;
   -webkit-tap-highlight-color: transparent;
 }
 
-.tile-art {
-  display: grid;
-  place-items: center;
+.tile-photo {
+  display: block;
   width: 100%;
-  height: 110px;
-  margin-bottom: 6px;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
 }
 
-.tile-art .object-art {
-  width: auto;
-  height: 100%;
-  max-width: 100%;
+.room-grid li:first-child .tile-photo {
+  aspect-ratio: 16 / 9;
 }
 
-.tile-backpack .tile-art {
-  height: 140px;
-}
-
-.tile-plaque .tile-art .object-art {
-  height: 100%;
+.tile-text {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px 12px;
 }
 
 .tile-label {
-  font-weight: 900;
-  font-size: 16px;
-  line-height: 1.15;
+  font-weight: 800;
+  font-size: 15.5px;
+  line-height: 1.2;
 }
 
 .tile-sub {
   font-size: 12.5px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
-  line-height: 1.25;
-}
-
-.tile-backpack {
-  background: #fff6e3;
-}
-
-.tile-backpack .tile-label {
-  font-size: 19px;
+  line-height: 1.3;
 }
