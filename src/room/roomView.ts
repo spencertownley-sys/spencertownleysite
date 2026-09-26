@@ -1,8 +1,9 @@
 // The photoreal Room: one wide photograph plus a depth map, rendered with a small
 // WebGL shader so the camera can drift slowly through the space with real parallax
-// (near things slide past faster than the far wall). Hotspots are projected with the
-// same math, so they stay pinned to the objects. Without WebGL it falls back to a
-// plain panning image.
+// (near things slide past faster than the far wall). The chair is a separate cut-out
+// layer drawn at its own depth, so it moves as one solid piece instead of smearing
+// into the rug behind it. Hotspots and hover zones are projected with the same math,
+// so they stay pinned to the objects. Without WebGL it falls back to a plain panning image.
 
 export interface Spot {
   id: string
@@ -10,6 +11,16 @@ export interface Spot {
   x: number
   y: number
   /** Relative nearness from the depth map, 0 (far) .. 1 (near). */
+  depth: number
+}
+
+export interface Zone {
+  id: string
+  /** Rectangle in the photo, 0..1. */
+  x: number
+  y: number
+  w: number
+  h: number
   depth: number
 }
 
@@ -21,16 +32,38 @@ export interface ProjectedSpot {
   inView: number
 }
 
+export interface ProjectedZone {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+export interface Cutout {
+  src: string
+  /** Where the cut-out sits in the photo, 0..1. */
+  rect: { x: number; y: number; w: number; h: number }
+  depth: number
+}
+
 export interface RoomViewOptions {
   canvas: HTMLCanvasElement
   fallback: HTMLImageElement
+  /** Photo for the WebGL view (without the cut-out). */
   sources: { width: number; src: string }[]
+  /** Complete photo for the no-WebGL fallback. */
+  flatSources: { width: number; src: string }[]
   depthSrc: string
+  cutout?: Cutout
   aspect: number
   spots: Spot[]
+  zones?: Zone[]
   interactive: boolean
   reducedMotion: boolean
-  onFrame?: (spots: ProjectedSpot[]) => void
+  /** Open on the whole room, then ease in and start drifting. */
+  intro: boolean
+  onFrame?: (spots: ProjectedSpot[], zones: ProjectedZone[]) => void
   onReady?: () => void
 }
 
@@ -47,16 +80,16 @@ const FRAG = `
 precision highp float;
 uniform sampler2D uImage;
 uniform sampler2D uDepth;
+uniform sampler2D uCut;
 uniform vec2 uCenter;
 uniform vec2 uSize;
 uniform vec2 uShift;
 uniform float uDolly;
 uniform float uFocus;
-uniform float uTime;
-uniform vec2 uRes;
+uniform vec4 uCutRect;
+uniform float uCutDepth;
+uniform float uCutOn;
 varying vec2 vUv;
-
-float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 
 vec2 displace(vec2 img) {
   float d = texture2D(uDepth, img).r - uFocus;
@@ -71,36 +104,37 @@ void main() {
   for (int i = 0; i < 6; i++) img = q - displace(img);
   vec3 col = texture2D(uImage, img).rgb;
 
-  // sunlight breathes a little
-  float lum = dot(col, vec3(0.299, 0.587, 0.114));
-  col *= 1.0 + 0.035 * sin(uTime * 0.45) * smoothstep(0.55, 0.95, lum);
-
-  // dust motes drifting through the bright, sunlit areas
-  float dust = 0.0;
-  for (int l = 0; l < 2; l++) {
-    float fl = float(l);
-    vec2 grid = vec2(46.0, 26.0) * (1.0 + fl * 0.7);
-    vec2 p = s * grid + vec2(uTime * (0.08 + fl * 0.05), -uTime * (0.16 + fl * 0.06));
-    vec2 cell = floor(p);
-    float h = hash(cell + fl * 17.0);
-    vec2 pos = vec2(hash(cell + 3.1), hash(cell + 7.7)) * 0.8 + 0.1;
-    pos += 0.12 * vec2(sin(uTime * 0.6 + h * 30.0), cos(uTime * 0.5 + h * 20.0));
-    float d = length((fract(p) - pos) * vec2(1.0, grid.x / grid.y * (uRes.y / uRes.x) * 1.8));
-    float size = 0.05 + 0.05 * hash(cell + 9.2);
-    dust += step(0.62, h) * smoothstep(size, 0.0, d) * (0.5 + 0.5 * sin(uTime * 1.7 + h * 40.0));
+  // the cut-out is flat, at one depth, so it inverts exactly
+  if (uCutOn > 0.5) {
+    float dc = uCutDepth - uFocus;
+    vec2 ci = (q - uShift * dc + uCenter * uDolly * dc) / (1.0 + uDolly * dc);
+    vec2 cu = (ci - uCutRect.xy) / uCutRect.zw;
+    if (cu.x > 0.0 && cu.y > 0.0 && cu.x < 1.0 && cu.y < 1.0) {
+      vec4 c = texture2D(uCut, cu); // premultiplied on upload
+      col = col * (1.0 - c.a) + c.rgb;
+    }
   }
-  col += vec3(1.0, 0.93, 0.8) * dust * smoothstep(0.5, 0.9, lum) * 0.5;
 
-  // gentle vignette and grain, like a real photo
+  // gentle, static vignette
   vec2 v = vUv - 0.5;
-  col *= 1.0 - 0.28 * dot(v, v) * 1.6;
-  col += (hash(gl_FragCoord.xy + fract(uTime) * 91.0) - 0.5) * 0.018;
+  col *= 1.0 - 0.25 * dot(v, v) * 1.6;
   gl_FragColor = vec4(col, 1.0);
 }
 `
 
+const FOCUS_DEPTH = 0.24
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v))
 const ease = (t: number) => t * t * (3 - 2 * t)
+const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+
+interface Cam {
+  cx: number
+  cy: number
+  size: { x: number; y: number }
+  shiftX: number
+  shiftY: number
+  dolly: number
+}
 
 export class RoomView {
   private o: RoomViewOptions
@@ -108,11 +142,14 @@ export class RoomView {
   private prog: WebGLProgram | null = null
   private tex: WebGLTexture | null = null
   private dtex: WebGLTexture | null = null
+  private ctex: WebGLTexture | null = null
+  private cutReady = false
   private loc: Record<string, WebGLUniformLocation | null> = {}
   private raf = 0
   private last = 0
   private time = 0
   private ready = false
+  private readyAt = -1
   private disposed = false
   private ro: ResizeObserver
   private w = 1
@@ -120,9 +157,10 @@ export class RoomView {
   private dpr = 1
   private loadedWidth = 0
 
-  // path position along the room (0 = left end, 1 = right end), direction and state
-  private u = 0.42
-  private dir = 1
+  // path position along the room (0 = left end, 1 = right end); u eases toward goal
+  private u = 0.5
+  private goal = 0.5
+  private dir = -1
   private paused = false
   private dragging = false
   private dragX = 0
@@ -131,6 +169,15 @@ export class RoomView {
   private my = 0
   private smx = 0
   private smy = 0
+
+  // zoom into a rectangle of the photo (the laptop screen)
+  private focusRect: { x: number; y: number; w: number; h: number } | null = null
+  private focusFrom = 0
+  private focusTo = 0
+  private focusStart = 0
+  private focusDur = 1
+  private focusDone: (() => void) | null = null
+  private focusVal = 0
 
   constructor(o: RoomViewOptions) {
     this.o = o
@@ -160,9 +207,27 @@ export class RoomView {
 
   /** Move along the room, for keyboard control. */
   nudge(amount: number) {
-    this.u = clamp(this.u + amount, 0, 1)
+    this.goal = clamp(this.goal + amount, 0, 1)
     this.dir = amount >= 0 ? 1 : -1
     this.idleUntil = performance.now() + 4000
+    this.skipIntro()
+  }
+
+  /**
+   * Zoom the camera until `rect` (a region of the photo) fills the screen, or back
+   * out with null. `instant` jumps straight there (deep links, reduced motion).
+   */
+  focus(rect: { x: number; y: number; w: number; h: number } | null, opts: { instant?: boolean; done?: () => void } = {}) {
+    if (rect) this.focusRect = rect
+    const to = rect ? 1 : 0
+    const instant = opts.instant || this.o.reducedMotion
+    this.focusFrom = instant ? to : this.focusVal
+    this.focusTo = to
+    this.focusStart = performance.now()
+    this.focusDur = (rect ? 1250 : 1000) * Math.max(0.35, Math.abs(to - this.focusVal))
+    this.focusDone = opts.done ?? null
+    if (instant) this.focusVal = to
+    this.skipIntro()
   }
 
   dispose() {
@@ -179,6 +244,7 @@ export class RoomView {
     if (gl) {
       gl.deleteTexture(this.tex)
       gl.deleteTexture(this.dtex)
+      gl.deleteTexture(this.ctex)
       gl.deleteProgram(this.prog)
     }
   }
@@ -206,14 +272,30 @@ export class RoomView {
       const a = gl.getAttribLocation(p, 'aPos')
       gl.enableVertexAttribArray(a)
       gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0)
-      for (const n of ['uImage', 'uDepth', 'uCenter', 'uSize', 'uShift', 'uDolly', 'uFocus', 'uTime', 'uRes']) this.loc[n] = gl.getUniformLocation(p, n)
+      const names = ['uImage', 'uDepth', 'uCut', 'uCenter', 'uSize', 'uShift', 'uDolly', 'uFocus', 'uCutRect', 'uCutDepth', 'uCutOn']
+      for (const n of names) this.loc[n] = gl.getUniformLocation(p, n)
       gl.uniform1i(this.loc.uImage, 0)
       gl.uniform1i(this.loc.uDepth, 1)
+      gl.uniform1i(this.loc.uCut, 2)
+      gl.uniform1f(this.loc.uFocus, FOCUS_DEPTH)
+      gl.uniform1f(this.loc.uCutOn, 0)
       this.gl = gl
       this.prog = p
       this.tex = this.makeTexture()
       this.dtex = this.makeTexture()
-      this.loadImage(this.o.depthSrc).then((img) => this.upload(this.dtex, img, 1))
+      this.ctex = this.makeTexture()
+      this.loadImage(this.o.depthSrc).then((img) => this.upload(this.dtex, img, 1, false), () => {})
+      const cut = this.o.cutout
+      if (cut) {
+        gl.uniform4f(this.loc.uCutRect, cut.rect.x, cut.rect.y, cut.rect.w, cut.rect.h)
+        gl.uniform1f(this.loc.uCutDepth, cut.depth)
+        this.loadImage(cut.src).then((img) => {
+          if (!this.gl || this.disposed) return
+          this.upload(this.ctex, img, 2, true)
+          this.cutReady = true
+          this.gl.uniform1f(this.loc.uCutOn, 1)
+        }, () => {})
+      }
     } catch (err) {
       console.warn('Room WebGL unavailable, using a flat image', err)
       this.gl = null
@@ -241,26 +323,30 @@ export class RoomView {
     })
   }
 
-  private upload(t: WebGLTexture | null, img: HTMLImageElement, unit: number) {
+  private upload(t: WebGLTexture | null, img: HTMLImageElement, unit: number, alpha: boolean) {
     const gl = this.gl
     if (!gl || this.disposed) return
     gl.activeTexture(gl.TEXTURE0 + unit)
     gl.bindTexture(gl.TEXTURE_2D, t)
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img)
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, alpha)
+    const fmt = alpha ? gl.RGBA : gl.RGB
+    gl.texImage2D(gl.TEXTURE_2D, 0, fmt, fmt, gl.UNSIGNED_BYTE, img)
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false)
   }
 
   /** Loads the smallest photo that stays sharp at the current canvas size. */
   private pickSource() {
-    const size = this.viewSize(0)
+    const size = this.viewSize(this.steadyZoom())
     const needed = (this.w * this.dpr) / size.x
-    const sorted = [...this.o.sources].sort((a, b) => a.width - b.width)
+    const list = this.gl ? this.o.sources : this.o.flatSources
+    const sorted = [...list].sort((a, b) => a.width - b.width)
     const pick = sorted.find((s) => s.width >= needed * 0.85) ?? sorted[sorted.length - 1]
     if (pick.width <= this.loadedWidth) return
     this.loadedWidth = pick.width
     const img = this.o.fallback
     const done = (el: HTMLImageElement) => {
-      if (this.gl) this.upload(this.tex, el, 0)
+      if (this.gl) this.upload(this.tex, el, 0, false)
       if (!this.ready) {
         this.ready = true
         this.o.onReady?.()
@@ -295,9 +381,14 @@ export class RoomView {
     }
   }
 
-  private onDown = (e: PointerEvent) => {
+  private onDown = (e: PointerEvent) => this.beginDrag(e.clientX)
+
+  /** Start dragging through the room (also used by overlays that sit on the canvas). */
+  beginDrag(clientX: number) {
+    if (this.focusVal > 0 || !this.o.interactive) return
     this.dragging = true
-    this.dragX = e.clientX
+    this.dragX = clientX
+    this.skipIntro()
   }
 
   private onMove = (e: PointerEvent) => {
@@ -306,11 +397,11 @@ export class RoomView {
       this.my = (e.clientY / window.innerHeight - 0.5) * 2
     }
     if (!this.dragging) return
-    const size = this.viewSize(0)
+    const size = this.viewSize(this.zoom())
     const span = Math.max(0.0001, 1 - size.x)
     const dx = e.clientX - this.dragX
     this.dragX = e.clientX
-    this.u = clamp(this.u - ((dx / this.w) * size.x) / span, 0, 1)
+    this.goal = clamp(this.goal - ((dx / this.w) * size.x) / span, 0, 1)
     if (dx) this.dir = dx < 0 ? 1 : -1
     this.idleUntil = performance.now() + 3500
   }
@@ -320,32 +411,102 @@ export class RoomView {
   }
 
   private onWheel = (e: WheelEvent) => {
+    if (this.focusVal > 0) return
     const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
     this.nudge(d * 0.0006)
   }
 
   /* ---------------- camera ---------------- */
 
-  /** Fraction of the photo visible at once (cover fit with a small overscan). */
-  private viewSize(dolly: number) {
-    const v = this.w / this.h
-    const a = this.o.aspect
-    const over = 1.07 * (1 + dolly * 0.035)
-    return v < a ? { x: v / a / over, y: 1 / over } : { x: 1 / over, y: a / v / over }
+  /** Seconds the whole room stays in view before the camera eases in. */
+  private static INTRO_HOLD = 2.4
+  private static INTRO_EASE = 3.6
+
+  private skipIntro() {
+    // any deliberate move ends the opening hold, but the zoom still eases in
+    if (this.readyAt >= 0 && this.time - this.readyAt < RoomView.INTRO_HOLD) this.readyAt = this.time - RoomView.INTRO_HOLD
   }
 
-  private camera(dollyPhase: number) {
-    const dolly = 0.5 - 0.5 * Math.cos(dollyPhase)
-    const size = this.viewSize(dolly)
-    const look = this.smx * 0.035
+  /** How far in the settled camera sits: about 80% of the room's width on wide screens. */
+  private steadyZoom() {
+    const coverX = Math.min(1, this.w / this.h / this.o.aspect)
+    return Math.max(1.07, coverX / Math.min(0.8, coverX / 1.07))
+  }
+
+  private introProgress() {
+    if (!this.o.intro) return 1
+    if (this.readyAt < 0) return 0
+    return clamp((this.time - this.readyAt - RoomView.INTRO_HOLD) / RoomView.INTRO_EASE, 0, 1)
+  }
+
+  /** Current zoom: 1 shows the whole photo (cover fit). */
+  private zoom() {
+    const steady = this.steadyZoom()
+    if (this.o.reducedMotion && this.o.intro) return 1.03
+    return 1.03 + (steady - 1.03) * easeInOut(this.introProgress())
+  }
+
+  /** Fraction of the photo visible at once. */
+  private viewSize(zoom: number) {
+    const v = this.w / this.h
+    const a = this.o.aspect
+    return v < a ? { x: v / a / zoom, y: 1 / zoom } : { x: 1 / zoom, y: a / v / zoom }
+  }
+
+  private roomCamera(): Cam {
+    const breathe = this.o.reducedMotion ? 0 : 0.5 - 0.5 * Math.cos(this.time * 0.2)
+    const size = this.viewSize(this.zoom() * (1 + breathe * 0.02))
+    const look = this.smx * 0.015
     const minX = size.x / 2 + 0.012
     const maxX = 1 - size.x / 2 - 0.012
     const cx = minX >= maxX ? 0.5 : clamp(minX + (maxX - minX) * ease(this.u) + look, minX, maxX)
-    const cy = clamp(0.5 + 0.008 * Math.sin(this.time * 0.37) + this.smy * 0.012, size.y / 2 + 0.01, 1 - size.y / 2 - 0.01)
-    // camera translation drives the parallax: follow the path, plus the mouse
-    const t = (ease(this.u) - 0.5) * 2 + this.smx * 0.7
-    const k = 0.02
-    return { cx, cy, size, shiftX: -t * k, shiftY: -this.smy * k * 0.4, dolly: dolly * 0.05 }
+    const sway = this.o.reducedMotion ? 0 : 0.006 * Math.sin(this.time * 0.3)
+    const cy = clamp(0.5 + sway + this.smy * 0.008, size.y / 2 + 0.01, 1 - size.y / 2 - 0.01)
+    // camera translation drives the parallax: follow the path, plus a little of the mouse
+    const intro = this.introProgress()
+    const t = (ease(this.u) - 0.5) * 2 * intro + this.smx * 0.3
+    const k = 0.012
+    return { cx, cy, size, shiftX: -t * k, shiftY: -this.smy * k * 0.3, dolly: breathe * 0.03 }
+  }
+
+  /** Blend from the room camera to one where `focusRect` fills the screen. */
+  private camera(): Cam {
+    const base = this.roomCamera()
+    const f = this.focusVal
+    const r = this.focusRect
+    if (f <= 0 || !r) return base
+    const v = this.w / this.h
+    const a = this.o.aspect
+    // biggest screen-shaped box inside the rect, so the rect covers the whole view
+    let sx = r.w
+    let sy = (sx * a) / v
+    if (sy > r.h) {
+      sy = r.h
+      sx = (sy * v) / a
+    }
+    sx *= 0.96
+    const tx = r.x + r.w / 2
+    const ty = r.y + r.h / 2
+    // zoom about the one point that stays put, so the move reads as flying straight in
+    const ratio = sx / base.size.x
+    const s = Math.exp(Math.log(base.size.x) + (Math.log(sx) - Math.log(base.size.x)) * f) / base.size.x
+    const px = ratio === 1 ? tx : (tx - base.cx * ratio) / (1 - ratio)
+    const py = ratio === 1 ? ty : (ty - base.cy * ratio) / (1 - ratio)
+    return {
+      cx: px + (base.cx - px) * s,
+      cy: py + (base.cy - py) * s,
+      size: { x: base.size.x * s, y: base.size.y * s },
+      shiftX: base.shiftX * (1 - f),
+      shiftY: base.shiftY * (1 - f),
+      dolly: base.dolly * (1 - f),
+    }
+  }
+
+  private project(x: number, y: number, depth: number, cam: Cam) {
+    const d = this.gl ? depth - FOCUS_DEPTH : 0
+    const qx = x + cam.shiftX * d + (x - cam.cx) * cam.dolly * d
+    const qy = y + cam.shiftY * d + (y - cam.cy) * cam.dolly * d
+    return { x: ((qx - cam.cx) / cam.size.x + 0.5) * this.w, y: ((qy - cam.cy) / cam.size.y + 0.5) * this.h }
   }
 
   private tick = (now: number) => {
@@ -353,33 +514,48 @@ export class RoomView {
     const dt = this.last ? Math.min(0.05, (now - this.last) / 1000) : 0
     this.last = now
     this.time += dt
+    if (this.ready && this.readyAt < 0) this.readyAt = this.time
 
-    const moving = !this.o.reducedMotion && !this.paused && !this.dragging && now > this.idleUntil
+    // focus tween
+    if (this.focusVal !== this.focusTo || this.focusDone) {
+      const p = clamp((now - this.focusStart) / this.focusDur, 0, 1)
+      this.focusVal = this.focusFrom + (this.focusTo - this.focusFrom) * easeInOut(p)
+      if (p >= 1) {
+        this.focusVal = this.focusTo
+        const cb = this.focusDone
+        this.focusDone = null
+        cb?.()
+      }
+    }
+
+    const settled = this.introProgress() > 0
+    const moving = !this.o.reducedMotion && !this.paused && !this.dragging && now > this.idleUntil && settled && this.focusVal === 0
     if (moving) {
-      // one slow pass across the room takes about 40 seconds, then it turns around
-      this.u += this.dir * dt * 0.025
-      if (this.u > 1) {
-        this.u = 1
+      // one slow pass across the room takes about a minute, then it turns around
+      this.goal += this.dir * dt * 0.017
+      if (this.goal > 1) {
+        this.goal = 1
         this.dir = -1
-      } else if (this.u < 0) {
-        this.u = 0
+      } else if (this.goal < 0) {
+        this.goal = 0
         this.dir = 1
       }
     }
-    const k = Math.min(1, dt * 2.5)
+    this.u += (this.goal - this.u) * Math.min(1, dt * 2.2)
+    // the mouse only steers gently, and catches up slowly
+    const k = Math.min(1, dt * 0.9)
     this.smx += (this.mx - this.smx) * k
     this.smy += (this.my - this.smy) * k
 
-    const cam = this.camera(this.o.reducedMotion ? 0 : this.time * 0.22)
+    const cam = this.camera()
     const gl = this.gl
-    if (gl && this.ready) {
+    // fully zoomed into the laptop the desktop covers everything, so skip drawing
+    if (gl && this.ready && this.focusVal < 1) {
       gl.uniform2f(this.loc.uCenter, cam.cx, cam.cy)
       gl.uniform2f(this.loc.uSize, cam.size.x, cam.size.y)
       gl.uniform2f(this.loc.uShift, cam.shiftX, cam.shiftY)
       gl.uniform1f(this.loc.uDolly, cam.dolly)
-      gl.uniform1f(this.loc.uFocus, 0.24)
-      gl.uniform1f(this.loc.uTime, this.o.reducedMotion ? 0 : this.time)
-      gl.uniform2f(this.loc.uRes, this.w, this.h)
+      gl.uniform1f(this.loc.uCutOn, this.cutReady ? 1 : 0)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     } else if (!gl) {
       // flat fallback: position the photo so the same region shows
@@ -393,17 +569,18 @@ export class RoomView {
 
     const cb = this.o.onFrame
     if (cb) {
-      const out: ProjectedSpot[] = this.o.spots.map((s) => {
-        const d = gl ? s.depth - 0.24 : 0
-        const qx = s.x + cam.shiftX * d + (s.x - cam.cx) * cam.dolly * d
-        const qy = s.y + cam.shiftY * d + (s.y - cam.cy) * cam.dolly * d
-        const x = ((qx - cam.cx) / cam.size.x + 0.5) * this.w
-        const y = ((qy - cam.cy) / cam.size.y + 0.5) * this.h
-        const margin = 40
-        const inView = clamp(Math.min(x - margin, this.w - margin - x, y - margin, this.h - margin - y) / 60, 0, 1)
-        return { id: s.id, x, y, inView }
+      const margin = 40
+      const spots: ProjectedSpot[] = this.o.spots.map((s) => {
+        const p = this.project(s.x, s.y, s.depth, cam)
+        const inView = clamp(Math.min(p.x - margin, this.w - margin - p.x, p.y - margin, this.h - margin - p.y) / 60, 0, 1)
+        return { id: s.id, x: p.x, y: p.y, inView: inView * (1 - this.focusVal) }
       })
-      cb(out)
+      const zones: ProjectedZone[] = (this.o.zones ?? []).map((z) => {
+        const a = this.project(z.x, z.y, z.depth, cam)
+        const b = this.project(z.x + z.w, z.y + z.h, z.depth, cam)
+        return { id: z.id, x: a.x, y: a.y, w: b.x - a.x, h: b.y - a.y }
+      })
+      cb(spots, zones)
     }
     this.raf = requestAnimationFrame(this.tick)
   }

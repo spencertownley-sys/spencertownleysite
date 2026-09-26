@@ -201,48 +201,59 @@ export function sectionForPath(path: string): Section | undefined {
 /* ------------------------------------------------------------------ */
 
 export interface Project {
+  id: string
   name: string
   url: string
   host: string
   description: string
+  /** One or two lines on the problem behind it, shown in the laptop's README files. */
+  why: string
   tags: string[]
   status: string
 }
 
 export const projects: Project[] = [
   {
+    id: 'points-pool',
     name: 'Seahawks Points Pool',
     url: 'https://points-pool-production.up.railway.app',
     host: 'points-pool-production.up.railway.app',
     description:
       "A tablet kiosk app built for my team's monthly Seahawks score-picking contest, twelve of us competing all season, done up in 8-bit style.",
+    why: 'Twelve of us pick Seahawks scores every month, all season. It deserved a real scoreboard, so it became an 8-bit kiosk on a tablet.',
     tags: ['Kiosk app', 'Team tool', '8-bit UI'],
     status: 'Live',
   },
   {
+    id: 'make-that',
     name: 'Make That',
     url: 'https://makethat.wtf',
     host: 'makethat.wtf',
     description:
       'A site that helps answer the question everyone building with AI eventually asks: what should I actually make?',
+    why: 'Everyone building with AI hits the same wall: the tools are ready, the idea is not. This hands you one, plus a prompt to start with.',
     tags: ['AI', 'Idea generation'],
     status: 'Live',
   },
   {
+    id: 'shortlist',
     name: 'Shortlist',
     url: 'https://shortlist.spencertownley.workers.dev',
     host: 'shortlist.spencertownley.workers.dev',
     description:
       'A simple tool for narrowing down photos as a group: upload a batch, share one link, and head-to-head matchups surface everyone\'s favorites.',
+    why: 'Picking favorites from a shoot by group chat does not work. Head-to-head matchups do, and nobody has to install anything.',
     tags: ['Group decisions', 'Photo workflow'],
     status: 'Live',
   },
   {
+    id: 'downbeat',
     name: 'Downbeat',
     url: 'https://trydownbeat.app',
     host: 'trydownbeat.app',
     description:
       'A scheduling app for bands, built to solve the actual headache of coordinating rehearsals and building a setlist everyone can vote on, or veto.',
+    why: 'Getting my band into the same room at the same time was harder than learning the songs. Now rehearsals and setlists live behind one link.',
     tags: ['Scheduling', 'Built for my band'],
     status: 'Live',
   },
@@ -352,6 +363,27 @@ export const travelAndPlanning = {
     'Planning four countries in ten days is a process problem with better food. You map the dependencies (ferries, borders, opening hours), find the bottleneck, and build slack in where things usually go wrong.',
     'The same instinct shows up at work. Sequence it, stress test it, then leave room for the good surprises.',
   ],
+}
+
+/** Shown when hovering the window in the Room. */
+export const washington = {
+  eyebrow: 'Out the window',
+  title: 'Home base: Washington State',
+  body: 'Evergreens, saltwater, and a volcano that only shows up when it feels like it.',
+  fact: 'Seattle gets less rain per year than Miami or New York. It just takes its time.',
+}
+
+/** The laptop in the Room zooms into a desktop with these items. */
+export const laptop = {
+  owner: "Spencer's laptop",
+  hint: 'Click a folder to look inside. Press Esc to step back into the room.',
+  touchHint: 'Tap a folder to look inside. Tap Back to return to the room.',
+  extras: {
+    howIBuild: { name: 'How I build.txt' },
+    resume: { name: 'Resume.pdf' },
+    github: { name: 'GitHub' },
+    mail: { name: 'Say hello' },
+  },
 }
 
 export const audio = {

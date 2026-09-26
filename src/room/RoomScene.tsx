@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { sectionById, type ObjectId, type SectionId } from '../content/site'
+import { sectionById, washington, type ObjectId, type SectionId } from '../content/site'
 import { ambience } from '../lib/audio'
 import { useReducedMotion } from '../lib/hooks'
 import { supportsWebGL } from '../lib/webgl'
 import { ROOM_PHOTO, roomObjects } from './objects'
-import { RoomView, type ProjectedSpot } from './roomView'
+import { RoomView, type ProjectedSpot, type ProjectedZone } from './roomView'
 
 const ids = Object.keys(roomObjects) as ObjectId[]
 
+type FrameFn = (s: ProjectedSpot[], z: ProjectedZone[]) => void
+
 /** Starts the photo renderer on a canvas; shared by the full scene and the mobile hero. */
-export function useRoomView(opts: { interactive: boolean; onFrame?: (s: ProjectedSpot[]) => void }) {
+export function useRoomView(opts: { interactive: boolean; intro?: boolean; onFrame?: FrameFn }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const img = useRef<HTMLImageElement>(null)
   const view = useRef<RoomView | null>(null)
@@ -17,7 +19,7 @@ export function useRoomView(opts: { interactive: boolean; onFrame?: (s: Projecte
   const reduced = useReducedMotion()
   const [ready, setReady] = useState(false)
   const flat = !supportsWebGL()
-  const { interactive } = opts
+  const { interactive, intro = false } = opts
 
   useEffect(() => {
     frame.current = opts.onFrame
@@ -29,12 +31,16 @@ export function useRoomView(opts: { interactive: boolean; onFrame?: (s: Projecte
       canvas: canvas.current,
       fallback: img.current,
       sources: ROOM_PHOTO.sources,
+      flatSources: ROOM_PHOTO.flatSources,
       depthSrc: ROOM_PHOTO.depth,
+      cutout: ROOM_PHOTO.chair,
       aspect: ROOM_PHOTO.aspect,
       spots: ids.map((id) => ({ id, ...roomObjects[id].spot })),
+      zones: [ROOM_PHOTO.window],
       interactive,
+      intro,
       reducedMotion: reduced,
-      onFrame: (s) => frame.current?.(s),
+      onFrame: (s, z) => frame.current?.(s, z),
       onReady: () => setReady(true),
     })
     view.current = v
@@ -42,7 +48,7 @@ export function useRoomView(opts: { interactive: boolean; onFrame?: (s: Projecte
       v.dispose()
       view.current = null
     }
-  }, [interactive, reduced])
+  }, [interactive, intro, reduced])
 
   return { canvas, img, view, ready, flat }
 }
@@ -56,12 +62,21 @@ export function RoomPhoto({ canvas, img, ready, flat }: Pick<ReturnType<typeof u
   )
 }
 
-export function RoomScene({ onOpen }: { onOpen: (id: SectionId) => void }) {
+interface Props {
+  onOpen: (id: SectionId) => void
+  /** True while the laptop's desktop is open: the camera flies into its screen. */
+  laptopOpen?: boolean
+}
+
+export function RoomScene({ onOpen, laptopOpen = false }: Props) {
   const spots = useRef<Record<string, HTMLButtonElement | null>>({})
+  const windowZone = useRef<HTMLButtonElement>(null)
+  const note = useRef<HTMLDivElement>(null)
   const [hint, setHint] = useState(true)
+  const [noteOpen, setNoteOpen] = useState(false)
   const hovering = useRef<string | null>(null)
 
-  const onFrame = useCallback((list: ProjectedSpot[]) => {
+  const onFrame = useCallback<FrameFn>((list, zones) => {
     for (const s of list) {
       const el = spots.current[s.id]
       if (!el) continue
@@ -69,16 +84,48 @@ export function RoomScene({ onOpen }: { onOpen: (id: SectionId) => void }) {
       el.style.opacity = s.inView.toFixed(3)
       el.style.visibility = s.inView > 0.02 ? 'visible' : 'hidden'
     }
+    const z = zones[0]
+    const el = windowZone.current
+    if (z && el) {
+      el.style.transform = `translate3d(${z.x.toFixed(1)}px, ${z.y.toFixed(1)}px, 0)`
+      el.style.width = `${z.w.toFixed(1)}px`
+      el.style.height = `${z.h.toFixed(1)}px`
+      const n = note.current
+      if (n) {
+        // pin the note to the wall beside the window, or inside it when there is no room
+        const vw = el.parentElement?.clientWidth ?? window.innerWidth
+        const nw = n.offsetWidth
+        const right = z.x + z.w + 18
+        const x = right + nw < vw - 16 ? right : Math.max(16, z.x + z.w - nw - 18)
+        const y = Math.max(76, z.y + z.h * 0.12)
+        n.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`
+      }
+    }
   }, [])
 
-  const { canvas, img, view, ready, flat } = useRoomView({ interactive: true, onFrame })
+  // a deep link straight to the laptop skips the opening pull-back
+  const [intro] = useState(() => !laptopOpen)
+  const { canvas, img, view, ready, flat } = useRoomView({ interactive: true, intro, onFrame })
 
-  // Labels show for a few seconds on arrival, then only on hover.
+  // Labels show while the whole room is in view on arrival, then only on hover.
   useEffect(() => {
     if (!ready) return
-    const t = window.setTimeout(() => setHint(false), 5200)
+    const t = window.setTimeout(() => setHint(false), 6200)
     return () => window.clearTimeout(t)
   }, [ready])
+
+  // Fly into the laptop screen while its desktop is open, and back out after.
+  const first = useRef(true)
+  useEffect(() => {
+    const v = view.current
+    if (!v) return
+    if (laptopOpen) {
+      v.focus(ROOM_PHOTO.laptopScreen, { instant: first.current })
+    } else if (!first.current) {
+      v.focus(null)
+    }
+    first.current = false
+  }, [laptopOpen, view])
 
   // Arrow keys move through the room when nothing else wants them.
   useEffect(() => {
@@ -88,6 +135,7 @@ export function RoomScene({ onOpen }: { onOpen: (id: SectionId) => void }) {
       if (t && (t.closest('input, textarea, select, [role="dialog"]') || t.isContentEditable)) return
       if (e.key === 'ArrowRight') view.current?.nudge(0.07)
       if (e.key === 'ArrowLeft') view.current?.nudge(-0.07)
+      if (e.key === 'Escape') setNoteOpen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -96,17 +144,40 @@ export function RoomScene({ onOpen }: { onOpen: (id: SectionId) => void }) {
   const enter = (id: string) => {
     hovering.current = id
     view.current?.setPaused(true)
-    ambience.sfx('hover')
+    if (id !== 'window') ambience.sfx('hover')
   }
   const leave = (id: string) => {
     if (hovering.current === id) hovering.current = null
     if (!hovering.current) view.current?.setPaused(false)
   }
 
+  const showNote = () => {
+    enter('window')
+    setNoteOpen(true)
+  }
+  const hideNote = () => {
+    leave('window')
+    setNoteOpen(false)
+  }
+
   return (
-    <div className={`room-scene ${hint ? 'show-labels' : ''}`}>
+    <div className={`room-scene ${hint ? 'show-labels' : ''} ${laptopOpen ? 'is-zoomed' : ''}`}>
       <RoomPhoto canvas={canvas} img={img} ready={ready} flat={flat} />
       <div className="room-spots">
+        <button
+          ref={windowZone}
+          type="button"
+          className="room-window"
+          aria-label={`The view out the window. ${washington.title}.`}
+          aria-expanded={noteOpen}
+          aria-controls="window-note"
+          onPointerDown={(e) => view.current?.beginDrag(e.clientX)}
+          onPointerEnter={(e) => e.pointerType === 'mouse' && showNote()}
+          onPointerLeave={(e) => e.pointerType === 'mouse' && hideNote()}
+          onFocus={showNote}
+          onBlur={hideNote}
+          onClick={() => (noteOpen ? hideNote() : showNote())}
+        />
         {ids.map((id) => {
           const def = roomObjects[id]
           const section = sectionById[def.section]
@@ -126,6 +197,7 @@ export function RoomScene({ onOpen }: { onOpen: (id: SectionId) => void }) {
                 onOpen(section.id)
               }}
               aria-label={`${section.roomLabel}. ${def.name}.`}
+              tabIndex={laptopOpen ? -1 : undefined}
             >
               <span className="spot-dot" aria-hidden="true" />
               <span className="spot-label" aria-hidden="true">
@@ -135,7 +207,31 @@ export function RoomScene({ onOpen }: { onOpen: (id: SectionId) => void }) {
             </button>
           )
         })}
+        <div ref={note} id="window-note" className={`window-note ${noteOpen ? 'is-open' : ''}`} role="note">
+          <WindowNote />
+        </div>
       </div>
+    </div>
+  )
+}
+
+export function WindowNote() {
+  return (
+    <div className="note-card">
+      <span className="note-stamp" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="40" height="40">
+          <path d="M4 32 L15 14 L20 21 L25 12 L36 32 Z" fill="currentColor" opacity="0.9" />
+          <path d="M22.4 16.2 L25 12 L27.6 16.2 L25.6 15.4 L24.4 16.6 Z" fill="#fff" />
+          <path d="M8 32 L11 26 L14 32 Z M27 32 L30 25 L33 32 Z" fill="#2f5d46" />
+        </svg>
+        WA
+      </span>
+      <span className="note-eyebrow">{washington.eyebrow}</span>
+      <strong className="note-title">{washington.title}</strong>
+      <span className="note-body">{washington.body}</span>
+      <span className="note-fact">
+        <b>Fun fact</b> {washington.fact}
+      </span>
     </div>
   )
 }

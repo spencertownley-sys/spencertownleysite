@@ -8,6 +8,7 @@ import './styles/base.css'
 import './styles/room.css'
 import './styles/brain.css'
 import './styles/panels.css'
+import './styles/laptop.css'
 import App from './App'
 import { installAudioUnlock } from './lib/audio'
 

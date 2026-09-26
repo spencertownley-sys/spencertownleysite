@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { sectionById, site, type SectionId } from '../content/site'
 import { ambience } from '../lib/audio'
 import { gridOrder, roomObjects } from './objects'
-import { RoomPhoto, useRoomView } from './RoomScene'
+import { RoomPhoto, useRoomView, WindowNote } from './RoomScene'
 
 /** Mobile Room: the room drifting by up top, then the same objects as a simple grid. */
 export function RoomGrid({ onOpen }: { onOpen: (id: SectionId) => void }) {
@@ -42,6 +42,9 @@ export function RoomGrid({ onOpen }: { onOpen: (id: SectionId) => void }) {
           )
         })}
       </ul>
+      <aside className="grid-window" aria-label="Out the window">
+        <WindowNote />
+      </aside>
     </div>
   )
 }
