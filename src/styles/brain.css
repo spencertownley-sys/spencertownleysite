@@ -97,10 +97,6 @@
   transition: none !important;
 }
 
-[data-fx='faded'] {
-  opacity: 0.25 !important;
-}
-
 .brain-tag {
   position: absolute;
   left: 0;

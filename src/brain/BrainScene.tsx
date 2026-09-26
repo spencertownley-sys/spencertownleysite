@@ -28,33 +28,34 @@ const smooth = (a: number, b: number, x: number) => {
   return t * t * (3 - 2 * t)
 }
 
-/** Shared dissolve / reassemble wiring for one node. */
-function useDissolve() {
+/** Scatters a node's label into pixels and brings it straight back, so it stays readable. */
+function usePulse() {
   const active = useRef(new Set<string>())
-  const dissolve = useCallback((key: string, parts: Parts, color: string) => {
-    if (active.current.has(key)) return
-    active.current.add(key)
+  useEffect(() => {
+    const keys = active.current
+    return () => keys.forEach((k) => fx.cancel(k))
+  }, [])
+  return useCallback((key: string, parts: Parts, color: string, done?: () => void) => {
+    if (active.current.has(key)) return done?.()
     const a = parts.anchor?.getBoundingClientRect()
     const anchor = a ? { x: a.left + a.width / 2, y: a.top + a.height / 2 } : { x: 0, y: 0 }
-    const ok = fx.dissolve(
+    const ok = fx.pulse(
       key,
       parts.texts,
       parts.lines.map((el) => ({ el, color })),
       anchor,
+      () => {
+        active.current.delete(key)
+        parts.hide.forEach((el) => el.removeAttribute('data-fx'))
+        done?.()
+      },
     )
+    if (!ok) return done?.()
+    active.current.add(key)
     // Hide the DOM copies in the same tick the canvas takes over, so there is no flash.
-    parts.hide.forEach((el) => el.setAttribute('data-fx', ok ? 'dissolved' : 'faded'))
+    parts.hide.forEach((el) => el.setAttribute('data-fx', 'dissolved'))
     ambience.sfx('dissolve')
   }, [])
-  const reassemble = useCallback((key: string, parts: Parts, done?: () => void) => {
-    if (!active.current.has(key)) return done?.()
-    active.current.delete(key)
-    fx.reassemble(key, () => {
-      parts.hide.forEach((el) => el.removeAttribute('data-fx'))
-      done?.()
-    })
-  }, [])
-  return { dissolve, reassemble }
 }
 
 /** Starts the WebGL brain on a canvas, falling back to the flat artwork if WebGL is unavailable. */
@@ -98,12 +99,22 @@ interface NodeEls {
   h?: number
 }
 
-function BrainStage({ onOpen }: Props) {
+function BrainStage({ onOpen, panelOpen }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const els = useRef<Record<string, NodeEls>>({})
   const hovering = useRef<string | null>(null)
+  const pulsing = useRef(0)
+  const opened = useRef<SectionId | null>(null)
   const [hover, setHover] = useState<SectionId | null>(null)
-  const { dissolve, reassemble } = useDissolve()
+  const pulse = usePulse()
+
+  // Closing a panel hands focus back to the label that opened it. That is not a visit,
+  // so it should not pulse the label or hold the brain still; forget it shortly after.
+  useEffect(() => {
+    if (panelOpen) return
+    const t = window.setTimeout(() => (opened.current = null), 400)
+    return () => window.clearTimeout(t)
+  }, [panelOpen])
 
   const measure = useCallback(() => {
     for (const e of Object.values(els.current)) {
@@ -205,21 +216,28 @@ function BrainStage({ onOpen }: Props) {
     }
   }
 
+  const resume = () => {
+    if (!hovering.current && !pulsing.current) gl.current?.setPaused(false)
+  }
   const enter = (id: SectionId) => {
     hovering.current = id
     gl.current?.setPaused(true)
     setHover(id)
     ambience.sfx('hover')
-    dissolve(id, partsFor(id), colorFor(id))
+    pulsing.current++
+    // the brain holds still until the label is back together, so the pixels land where it is
+    pulse(id, partsFor(id), colorFor(id), () => {
+      pulsing.current--
+      resume()
+    })
   }
   const leave = (id: SectionId) => {
     if (hovering.current === id) hovering.current = null
     setHover((h) => (h === id ? null : h))
-    reassemble(id, partsFor(id), () => {
-      if (!hovering.current) gl.current?.setPaused(false)
-    })
+    resume()
   }
   const open = (id: SectionId) => {
+    opened.current = id
     ambience.sfx('open')
     onOpen(id)
   }
@@ -255,7 +273,10 @@ function BrainStage({ onOpen }: Props) {
               className={`brain-tag ${s.brain.only ? 'is-only' : ''}`}
               onPointerEnter={() => enter(n.id)}
               onPointerLeave={() => leave(n.id)}
-              onFocus={() => enter(n.id)}
+              onFocus={() => {
+                if (opened.current === n.id) opened.current = null
+                else enter(n.id)
+              }}
               onBlur={() => leave(n.id)}
               onClick={() => open(n.id)}
               aria-label={`${s.brain.label}: ${s.brain.teaser}. Opens ${s.title}.`}
@@ -304,33 +325,24 @@ function listParts(li: HTMLLIElement | null | undefined): Parts {
 }
 
 /** Mobile and portrait Brain: the rotating brain up top, then a stacked list of nodes. */
-function BrainList({ onOpen, panelOpen }: Props) {
+function BrainList({ onOpen }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const { failed } = useBrainGL(canvas, 'low')
-  const { dissolve, reassemble } = useDissolve()
+  const pulse = usePulse()
   const refs = useRef<Record<string, HTMLLIElement | null>>({})
-  const pending = useRef<string | null>(null)
   const timer = useRef(0)
-
-  // Reassemble the tapped node once its panel closes.
-  useEffect(() => {
-    if (!panelOpen && pending.current) {
-      const id = pending.current
-      pending.current = null
-      reassemble(id, listParts(refs.current[id]))
-    }
-  }, [panelOpen, reassemble])
 
   useEffect(() => () => window.clearTimeout(timer.current), [])
 
+  // The label scatters and starts flying home, then the panel slides up over it.
   const tap = (id: SectionId) => {
-    if (pending.current) return
-    pending.current = id
-    dissolve(id, listParts(refs.current[id]), colorFor(id))
+    if (timer.current) return
+    pulse(id, listParts(refs.current[id]), colorFor(id))
     timer.current = window.setTimeout(() => {
+      timer.current = 0
       ambience.sfx('open')
       onOpen(id)
-    }, 480)
+    }, 700)
   }
 
   const group = (only: boolean) =>

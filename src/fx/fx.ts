@@ -1,5 +1,5 @@
 // One full-screen canvas for the effect that needs real pixels:
-// Brain mode's pixel dissolve / reassemble.
+// Brain mode's pixel pulse (a label scatters and reassembles).
 
 import type { Mode } from '../lib/router'
 
@@ -20,15 +20,15 @@ interface Particle {
 
 interface Group {
   particles: Particle[]
-  state: 'out' | 'in'
+  state: 'out' | 'hold' | 'in'
   t0: number
-  anchorX: number
-  anchorY: number
   onDone?: () => void
 }
 
-const OUT_MS = 700
-const IN_MS = 520
+// One pulse: the label scatters, hangs for a beat, then flies home.
+const OUT_MS = 460
+const HOLD_MS = 120
+const IN_MS = 540
 
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3)
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
@@ -136,26 +136,14 @@ class Fx {
   }
 
   /**
-   * Hides nothing by itself: the caller hides the DOM label in the same tick.
-   * Returns false if the effect is unavailable (reduced motion), so the caller can fall back.
+   * Scatters a label into pixels and brings it back, then calls onDone.
+   * Hides nothing by itself: the caller hides the DOM label in the same tick and shows it again in onDone.
+   * Returns false if the effect is unavailable (reduced motion) or already running for this key.
    */
-  dissolve(key: string, texts: HTMLElement[], lines: { el: SVGGeometryElement; color: string }[], anchor: { x: number; y: number }): boolean {
-    if (this.reduced || !this.ctx) return false
-    const existing = this.groups.get(key)
-    const now = performance.now()
-    if (existing) {
-      // reverse an in-flight reassembly from wherever the particles are
-      existing.state = 'out'
-      existing.t0 = now
-      existing.onDone = undefined
-      for (const p of existing.particles) {
-        p.ox = p.x
-        p.oy = p.y
-      }
-      this.kick()
-      return true
-    }
+  pulse(key: string, texts: HTMLElement[], lines: { el: SVGGeometryElement; color: string }[], anchor: { x: number; y: number }, onDone: () => void): boolean {
+    if (this.reduced || !this.ctx || this.groups.has(key)) return false
     const particles = [...texts.flatMap((el) => sampleText(el, 2)), ...lines.flatMap((l) => sampleLine(l.el, l.color, 2.5))]
+    if (!particles.length) return false
     for (const p of particles) {
       const dx = p.hx - anchor.x
       const dy = p.hy - anchor.y
@@ -164,32 +152,17 @@ class Fx {
       const ang = Math.atan2(dy, dx) + (Math.random() - 0.5) * 1.6
       p.tx = p.hx + Math.cos(ang) * push + (dx / d) * 8
       p.ty = p.hy + Math.sin(ang) * push - Math.random() * 18
-      p.delay = Math.random() * 160
+      p.delay = Math.random() * 120
     }
-    this.groups.set(key, { particles, state: 'out', t0: now, anchorX: anchor.x, anchorY: anchor.y })
+    const now = performance.now()
+    this.groups.set(key, { particles, state: 'out', t0: now, onDone })
     this.draw(now)
     this.kick()
     return true
   }
 
-  reassemble(key: string, onDone: () => void) {
-    const g = this.groups.get(key)
-    if (!g) {
-      onDone()
-      return
-    }
-    g.state = 'in'
-    g.t0 = performance.now()
-    g.onDone = onDone
-    for (const p of g.particles) {
-      p.ox = p.x
-      p.oy = p.y
-      p.delay = Math.random() * 140
-    }
-    this.kick()
-  }
-
-  clear(key: string) {
+  /** Drops a pulse without calling its onDone (the caller is going away). */
+  cancel(key: string) {
     this.groups.delete(key)
     this.kick()
   }
@@ -222,13 +195,12 @@ class Fx {
       for (const p of g.particles) {
         const lt = Math.max(0, t - p.delay)
         let alpha: number
-        if (g.state === 'out') {
-          const k = Math.min(1, lt / OUT_MS)
+        if (g.state !== 'in') {
+          const k = g.state === 'hold' ? 1 : Math.min(1, lt / OUT_MS)
           const e = easeOut(k)
-          // after arriving, keep a slow shimmer so the cloud feels alive
-          const drift = k >= 1 ? Math.sin(now / 600 + p.phase) * 1.6 : 0
-          p.x = p.ox + (p.tx - p.ox) * e + drift
-          p.y = p.oy + (p.ty - p.oy) * e + Math.cos(now / 700 + p.phase) * (k >= 1 ? 1.2 : 0)
+          // a slow shimmer while scattered, so the cloud feels alive
+          p.x = p.ox + (p.tx - p.ox) * e + Math.sin(now / 600 + p.phase) * 1.6 * e
+          p.y = p.oy + (p.ty - p.oy) * e + Math.cos(now / 700 + p.phase) * 1.2 * e
           alpha = 1 - 0.65 * e
           if (k < 1) settled = false
         } else {
@@ -245,12 +217,22 @@ class Fx {
       }
       ctx.globalAlpha = 1
       ctx.globalCompositeOperation = 'source-over'
-      if (g.state === 'out') busy = true // keep shimmering while dissolved
-      if (g.state === 'in' && settled) {
-        const done = g.onDone
+      busy = true // including the frame a group finishes, so the next one clears it
+      if (g.state === 'out' && settled) {
+        g.state = 'hold'
+        g.t0 = now
+      } else if (g.state === 'hold' && t >= HOLD_MS) {
+        g.state = 'in'
+        g.t0 = now
+        for (const p of g.particles) {
+          p.ox = p.x
+          p.oy = p.y
+          p.delay = Math.random() * 120
+        }
+      } else if (g.state === 'in' && settled) {
         this.groups.delete(key)
-        done?.()
-      } else if (g.state === 'in') busy = true
+        g.onDone?.()
+      }
     }
     return busy
   }

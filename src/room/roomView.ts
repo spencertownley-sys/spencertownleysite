@@ -4,6 +4,9 @@
 // layer drawn at its own depth, so it moves as one solid piece instead of smearing
 // into the rug behind it. Hotspots and hover zones are projected with the same math,
 // so they stay pinned to the objects. Without WebGL it falls back to a plain panning image.
+// The view out the window has a little life of its own (see windowLife.ts).
+
+import { MAX_BIRDS, PHOTO_PX, SASQUATCH, WINDOW_MASK, WindowLife } from './windowLife'
 
 export interface Spot {
   id: string
@@ -81,6 +84,8 @@ precision highp float;
 uniform sampler2D uImage;
 uniform sampler2D uDepth;
 uniform sampler2D uCut;
+uniform sampler2D uWin;
+uniform sampler2D uSq;
 uniform vec2 uCenter;
 uniform vec2 uSize;
 uniform vec2 uShift;
@@ -89,11 +94,47 @@ uniform float uFocus;
 uniform vec4 uCutRect;
 uniform float uCutDepth;
 uniform float uCutOn;
+uniform float uLife;
+uniform float uTime;
+uniform vec4 uWinRect;
+uniform vec4 uSqPos;
+uniform float uSqOn;
+uniform vec4 uBirds[${MAX_BIRDS}];
 varying vec2 vUv;
+
+const vec2 PX = vec2(${PHOTO_PX.w}.0, ${PHOTO_PX.h}.0);
 
 vec2 displace(vec2 img) {
   float d = texture2D(uDepth, img).r - uFocus;
   return uShift * d + (img - uCenter) * uDolly * d;
+}
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+float fbm(vec2 p) {
+  float v = 0.0;
+  float a = 0.5;
+  for (int i = 0; i < 4; i++) {
+    v += a * noise(p);
+    p = p * 2.03 + vec2(17.0, 9.0);
+    a *= 0.5;
+  }
+  return v;
+}
+
+float segment(vec2 p, vec2 a, vec2 b) {
+  vec2 pa = p - a;
+  vec2 ba = b - a;
+  return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0));
 }
 
 void main() {
@@ -102,7 +143,66 @@ void main() {
   // invert the parallax: find the photo point that lands on this pixel
   vec2 img = q;
   for (int i = 0; i < 6; i++) img = q - displace(img);
-  vec3 col = texture2D(uImage, img).rgb;
+
+  // the sasquatch atlas has mipmaps, so it is sampled outside any branch
+  vec2 P = img * PX;
+  vec2 sp = vec2(32.0 + (P.x - uSqPos.x) / ${SASQUATCH.scale} * uSqPos.w, 60.0 + (P.y - uSqPos.y) / ${SASQUATCH.scale});
+  vec2 spc = clamp(sp, vec2(0.5), vec2(63.5));
+  float f0 = floor(uSqPos.z);
+  float f1 = mod(f0 + 1.0, ${SASQUATCH.frames}.0);
+  vec4 sq = mix(texture2D(uSq, vec2((f0 * 64.0 + spc.x) / ${SASQUATCH.frames * SASQUATCH.frameSize}.0, spc.y / 64.0)),
+                texture2D(uSq, vec2((f1 * 64.0 + spc.x) / ${SASQUATCH.frames * SASQUATCH.frameSize}.0, spc.y / 64.0)), fract(uSqPos.z));
+
+  vec3 col;
+  vec2 wu = (img - uWinRect.xy) / uWinRect.zw;
+  if (uLife > 0.5 && wu.x > 0.0 && wu.y > 0.0 && wu.x < 1.0 && wu.y < 1.0) {
+    vec3 m = texture2D(uWin, wu).rgb;
+    float t = uTime;
+
+    // trees: a slow breeze, a pixel or two at most, in gusts that roll across the view
+    float gust = 0.55 + 0.45 * sin(t * 0.21 + P.x * 0.0021) * sin(t * 0.13 + 1.7);
+    vec2 sway = vec2(
+      sin(t * 0.9 + P.x * 0.011 + P.y * 0.004) * 0.65 + sin(t * 1.63 + P.x * 0.023 - P.y * 0.012) * 0.35,
+      0.3 * sin(t * 1.21 + P.x * 0.017 + P.y * 0.006));
+    col = texture2D(uImage, img + sway * (1.8 * gust * m.g) / PX).rgb;
+
+    // the sasquatch, behind anything leafy, softened by the air between
+    float inSprite = step(0.0, sp.x) * step(sp.x, 64.0) * step(0.0, sp.y) * step(sp.y, 64.0);
+    float lum = dot(col, vec3(0.3, 0.59, 0.11));
+    float leafy = max(smoothstep(0.725, 0.627, lum), smoothstep(0.086, 0.165, col.r - col.b));
+    float k = uSqOn * inSprite * m.b * (1.0 - leafy) * smoothstep(62.0, 55.0, sp.y);
+    sq *= k;
+    sq.rgb = sq.rgb * 0.72 + vec3(0.84, 0.83, 0.83) * sq.a * 0.28;
+    col = col * (1.0 - sq.a) + sq.rgb;
+
+    // birds: tiny dark flecks with flapping wings, only against open sky
+    float bird = 0.0;
+    for (int i = 0; i < ${MAX_BIRDS}; i++) {
+      vec4 b = uBirds[i];
+      if (b.z > 0.0) {
+        vec2 d = P - b.xy;
+        float tip = -(0.12 + 0.5 * b.w) * b.z;
+        float dist = min(segment(d, vec2(0.0), vec2(-b.z, tip)), segment(d, vec2(0.0), vec2(b.z, tip)));
+        bird = max(bird, 1.0 - smoothstep(0.35, 1.15, dist));
+      }
+    }
+    col = mix(col, vec3(0.3, 0.29, 0.31), bird * 0.6 * smoothstep(0.25, 0.7, m.r));
+
+    // three thin wisps of cloud, drifting across the upper panes every few minutes
+    float detail = fbm(vec2(P.x / 90.0 - t * 0.02, P.y / 32.0));
+    float cloud = 0.0;
+    for (int i = 0; i < 3; i++) {
+      float fi = float(i);
+      vec3 c = i == 0 ? vec3(1600.0, 210.0, 230.0) : i == 1 ? vec3(2150.0, 330.0, 300.0) : vec3(2600.0, 170.0, 180.0);
+      float cx = mod(c.x + t * 4.0 - 1250.0, 1300.0) + 1250.0;
+      vec2 d = vec2((P.x - cx) / c.z, (P.y - c.y) / (c.z * 0.14));
+      float shape = exp(-dot(d, d) * 2.2);
+      cloud = max(cloud, shape * smoothstep(0.3, 0.72, detail + shape * 0.3 - fi * 0.02));
+    }
+    col = mix(col, vec3(1.0, 0.985, 0.965), cloud * m.r * 0.4);
+  } else {
+    col = texture2D(uImage, img).rgb;
+  }
 
   // the cut-out is flat, at one depth, so it inverts exactly
   if (uCutOn > 0.5) {
@@ -143,7 +243,13 @@ export class RoomView {
   private tex: WebGLTexture | null = null
   private dtex: WebGLTexture | null = null
   private ctex: WebGLTexture | null = null
+  private wtex: WebGLTexture | null = null
+  private stex: WebGLTexture | null = null
   private cutReady = false
+  private lifeReady = 0
+  private life = new WindowLife()
+  /** Seconds of life outside the window; it holds still while the camera is zoomed all the way in. */
+  private lifeTime = 0
   private loc: Record<string, WebGLUniformLocation | null> = {}
   private raf = 0
   private last = 0
@@ -261,6 +367,8 @@ export class RoomView {
       gl.deleteTexture(this.tex)
       gl.deleteTexture(this.dtex)
       gl.deleteTexture(this.ctex)
+      gl.deleteTexture(this.wtex)
+      gl.deleteTexture(this.stex)
       gl.deleteProgram(this.prog)
     }
   }
@@ -288,18 +396,46 @@ export class RoomView {
       const a = gl.getAttribLocation(p, 'aPos')
       gl.enableVertexAttribArray(a)
       gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0)
-      const names = ['uImage', 'uDepth', 'uCut', 'uCenter', 'uSize', 'uShift', 'uDolly', 'uFocus', 'uCutRect', 'uCutDepth', 'uCutOn']
-      for (const n of names) this.loc[n] = gl.getUniformLocation(p, n)
+      const names = ['uImage', 'uDepth', 'uCut', 'uWin', 'uSq', 'uCenter', 'uSize', 'uShift', 'uDolly', 'uFocus', 'uCutRect', 'uCutDepth', 'uCutOn']
+      const lifeNames = ['uLife', 'uTime', 'uWinRect', 'uSqPos', 'uSqOn', 'uBirds']
+      for (const n of [...names, ...lifeNames]) this.loc[n] = gl.getUniformLocation(p, n)
       gl.uniform1i(this.loc.uImage, 0)
       gl.uniform1i(this.loc.uDepth, 1)
       gl.uniform1i(this.loc.uCut, 2)
+      gl.uniform1i(this.loc.uWin, 3)
+      gl.uniform1i(this.loc.uSq, 4)
       gl.uniform1f(this.loc.uFocus, FOCUS_DEPTH)
       gl.uniform1f(this.loc.uCutOn, 0)
+      gl.uniform1f(this.loc.uLife, 0)
+      const wr = WINDOW_MASK.rect
+      gl.uniform4f(this.loc.uWinRect, wr.x, wr.y, wr.w, wr.h)
       this.gl = gl
       this.prog = p
       this.tex = this.makeTexture()
       this.dtex = this.makeTexture()
       this.ctex = this.makeTexture()
+      this.wtex = this.makeTexture()
+      this.stex = this.makeTexture()
+      // until the window textures load, their units need something complete to sample
+      for (const [unit, t] of [[3, this.wtex], [4, this.stex]] as const) {
+        gl.activeTexture(gl.TEXTURE0 + unit)
+        gl.bindTexture(gl.TEXTURE_2D, t)
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4))
+      }
+      if (!this.o.reducedMotion) {
+        this.loadImage(WINDOW_MASK.src).then((img) => {
+          this.upload(this.wtex, img, 3, false)
+          this.lifeLoaded()
+        }, () => {})
+        this.loadImage(SASQUATCH.src).then((img) => {
+          if (!this.gl || this.disposed) return
+          this.upload(this.stex, img, 4, true)
+          // it is drawn much smaller than the atlas, so give it mipmaps to keep it from shimmering
+          this.gl.generateMipmap(this.gl.TEXTURE_2D)
+          this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR_MIPMAP_LINEAR)
+          this.lifeLoaded()
+        }, () => {})
+      }
       this.loadImage(this.o.depthSrc).then((img) => this.upload(this.dtex, img, 1, false), () => {})
       const cut = this.o.cutout
       if (cut) {
@@ -316,6 +452,12 @@ export class RoomView {
       console.warn('Room WebGL unavailable, using a flat image', err)
       this.gl = null
     }
+  }
+
+  /** The window comes alive once both its mask and the sasquatch are in. */
+  private lifeLoaded() {
+    if (!this.gl || this.disposed) return
+    if (++this.lifeReady === 2) this.gl.uniform1f(this.loc.uLife, 1)
   }
 
   private makeTexture() {
@@ -582,6 +724,9 @@ export class RoomView {
     this.smx += (this.mx - this.smx) * k
     this.smy += (this.my - this.smy) * k
 
+    // the world outside keeps going, except while the camera is all the way in (the frame is static then)
+    if (this.focusVal < 1) this.lifeTime += dt
+
     const cam = this.camera()
     const gl = this.gl
     // fully zoomed in the frame stops moving, so only refresh it a few times a second
@@ -596,6 +741,13 @@ export class RoomView {
       gl.uniform2f(this.loc.uShift, cam.shiftX, cam.shiftY)
       gl.uniform1f(this.loc.uDolly, cam.dolly)
       gl.uniform1f(this.loc.uCutOn, this.cutReady ? 1 : 0)
+      if (this.lifeReady === 2) {
+        const life = this.life.at(this.lifeTime)
+        gl.uniform1f(this.loc.uTime, this.lifeTime)
+        gl.uniform4fv(this.loc.uBirds, life.birds)
+        gl.uniform1f(this.loc.uSqOn, life.sasquatch ? 1 : 0)
+        if (life.sasquatch) gl.uniform4fv(this.loc.uSqPos, life.sasquatch)
+      }
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     } else if (!gl) {
       // flat fallback: position the photo so the same region shows
