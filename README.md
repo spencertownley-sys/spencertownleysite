@@ -44,6 +44,10 @@ The room is an AI-generated photo (`assets/room/room-source.jpg`, 3840 x 2143) w
 
 To use a different photo (for example a real photo of your own space), export the same set of files at the same names, update the spots and rectangles in `objects.ts`, and update `ROOM_PHOTO.aspect` if the proportions change. Without a separate foreground layer, drop `chair` from `ROOM_PHOTO`.
 
+## Favicon
+
+The icon is `public/favicon.svg` (the ST monogram), with `favicon-32.png` and `apple-touch-icon.png` (180 px) made from it. Other options, and a preview sheet at real tab sizes, are in `assets/favicon-options/`. To switch, copy the SVG you want over `public/favicon.svg`, regenerate the two PNGs from it, and bump the `?v=` on the icon links in `index.html` so browsers drop the old one.
+
 ## Deploy (Railway)
 
 `railway.json` tells Railway to run `npm run build` and start `npm start`, with a health check on `/healthz`. The server sets long-lived caching for hashed assets, serves precompressed files, adds security headers, and falls back to `index.html` for app routes like `/work`.

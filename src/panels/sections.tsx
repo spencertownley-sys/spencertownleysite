@@ -248,7 +248,15 @@ function Listen() {
 function Countries() {
   return (
     <>
+      <p className="eyebrow-line">{countriesCopy.eyebrow}</p>
       <p className="lead">{countriesCopy.lead}</p>
+      <div className="btn-row travel-cta">
+        <ExtLink href={`mailto:${site.email}?subject=${encodeURIComponent(countriesCopy.ctaSubject)}`} icon={<MailIcon width={17} height={17} />}>
+          {countriesCopy.cta}
+        </ExtLink>
+        <InLink to="/trips">How I plan a trip</InLink>
+      </div>
+      <p className="map-hint">{countriesCopy.hint}</p>
       <Suspense fallback={<div className="map-loading">Loading map</div>}>
         <CountriesMap />
       </Suspense>
@@ -273,7 +281,9 @@ function Countries() {
         <ExtLink href={links.travelInstagram.url} icon={<InstagramIcon width={17} height={17} />} variant="ghost">
           Travel Instagram
         </ExtLink>
-        <InLink to="/trips">How I plan a trip</InLink>
+        <ExtLink href={`mailto:${site.email}?subject=${encodeURIComponent(countriesCopy.ctaSubject)}`} icon={<MailIcon width={17} height={17} />} variant="ghost">
+          {countriesCopy.cta}
+        </ExtLink>
       </div>
     </>
   )

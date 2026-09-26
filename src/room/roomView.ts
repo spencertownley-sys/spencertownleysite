@@ -178,6 +178,12 @@ export class RoomView {
   private focusDur = 1
   private focusDone: (() => void) | null = null
   private focusVal = 0
+  private focusFit: ((w: number, h: number) => { x: number; y: number; w: number; h: number }) | null = null
+  /** Canvas size last drawn while fully zoomed in; the frame is static then, so skip redraws. */
+  private focusDrawn = ''
+  /** Bumped on every texture upload, so a sharper photo arriving mid-zoom gets drawn. */
+  private uploads = 0
+  private drawnAt = 0
 
   constructor(o: RoomViewOptions) {
     this.o = o
@@ -215,10 +221,18 @@ export class RoomView {
 
   /**
    * Zoom the camera until `rect` (a region of the photo) fills the screen, or back
-   * out with null. `instant` jumps straight there (deep links, reduced motion).
+   * out with null. `fit` places the rect in a given screen box instead (in px), so
+   * some of its surroundings stay visible. `instant` jumps straight there.
    */
-  focus(rect: { x: number; y: number; w: number; h: number } | null, opts: { instant?: boolean; done?: () => void } = {}) {
-    if (rect) this.focusRect = rect
+  focus(
+    rect: { x: number; y: number; w: number; h: number } | null,
+    opts: { instant?: boolean; done?: () => void; fit?: (w: number, h: number) => { x: number; y: number; w: number; h: number } } = {},
+  ) {
+    if (rect) {
+      this.focusRect = rect
+      this.focusFit = opts.fit ?? null
+      this.loadLargest()
+    }
     const to = rect ? 1 : 0
     const instant = opts.instant || this.o.reducedMotion
     this.focusFrom = instant ? to : this.focusVal
@@ -333,6 +347,7 @@ export class RoomView {
     const fmt = alpha ? gl.RGBA : gl.RGB
     gl.texImage2D(gl.TEXTURE_2D, 0, fmt, fmt, gl.UNSIGNED_BYTE, img)
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false)
+    this.uploads++
   }
 
   /** Loads the smallest photo that stays sharp at the current canvas size. */
@@ -357,6 +372,15 @@ export class RoomView {
       img.src = pick.src
       img.decode?.().then(() => done(img), () => done(img))
     }
+  }
+
+  /** Zooming in shows the photo much larger, so fetch the sharpest copy. */
+  private loadLargest() {
+    if (!this.gl) return
+    const best = [...this.o.sources].sort((a, b) => b.width - a.width)[0]
+    if (!best || best.width <= this.loadedWidth) return
+    this.loadedWidth = best.width
+    this.loadImage(best.src).then((el) => this.upload(this.tex, el, 0, false), () => {})
   }
 
   private resize() {
@@ -477,16 +501,25 @@ export class RoomView {
     if (f <= 0 || !r) return base
     const v = this.w / this.h
     const a = this.o.aspect
-    // biggest screen-shaped box inside the rect, so the rect covers the whole view
-    let sx = r.w
-    let sy = (sx * a) / v
-    if (sy > r.h) {
-      sy = r.h
-      sx = (sy * v) / a
+    let sx: number
+    let tx: number
+    let ty: number
+    const box = this.focusFit?.(this.w, this.h)
+    if (box) {
+      // scale and center so the rect lands exactly on `box`
+      sx = (r.w * this.w) / box.w
+      const sy = (sx * a) / v
+      tx = r.x + r.w / 2 - ((box.x + box.w / 2) / this.w - 0.5) * sx
+      ty = r.y + r.h / 2 - ((box.y + box.h / 2) / this.h - 0.5) * sy
+    } else {
+      // biggest screen-shaped box inside the rect, so the rect covers the whole view
+      sx = r.w
+      const sy = (sx * a) / v
+      if (sy > r.h) sx = (r.h * v) / a
+      sx *= 0.96
+      tx = r.x + r.w / 2
+      ty = r.y + r.h / 2
     }
-    sx *= 0.96
-    const tx = r.x + r.w / 2
-    const ty = r.y + r.h / 2
     // zoom about the one point that stays put, so the move reads as flying straight in
     const ratio = sx / base.size.x
     const s = Math.exp(Math.log(base.size.x) + (Math.log(sx) - Math.log(base.size.x)) * f) / base.size.x
@@ -549,8 +582,13 @@ export class RoomView {
 
     const cam = this.camera()
     const gl = this.gl
-    // fully zoomed into the laptop the desktop covers everything, so skip drawing
-    if (gl && this.ready && this.focusVal < 1) {
+    // fully zoomed in the frame stops moving, so only refresh it a few times a second
+    const sizeKey = `${this.o.canvas.width}x${this.o.canvas.height}x${this.uploads}`
+    const still = this.focusVal === 1 && this.focusDrawn === sizeKey && now - this.drawnAt < 250
+    if (gl && this.ready && !still) {
+      this.focusDrawn = this.focusVal === 1 ? sizeKey : ''
+      this.drawnAt = now
+
       gl.uniform2f(this.loc.uCenter, cam.cx, cam.cy)
       gl.uniform2f(this.loc.uSize, cam.size.x, cam.size.y)
       gl.uniform2f(this.loc.uShift, cam.shiftX, cam.shiftY)

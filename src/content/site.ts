@@ -145,7 +145,7 @@ export const sections: Section[] = [
     id: 'countries',
     path: '/countries',
     title: '47 countries and counting',
-    subtitle: 'Where I have been, so far',
+    subtitle: 'I travel, and I plan',
     object: 'poster',
     roomLabel: 'Countries visited',
     brain: { region: 'Hippocampus', label: 'Countries visited', teaser: 'spatial memory: 47 countries' },
@@ -286,7 +286,12 @@ export const work = {
 }
 
 export const countriesCopy = {
-  lead: 'Forty-seven and counting. Hover the map, or pick a region to zoom in.',
+  eyebrow: 'I travel. I plan.',
+  lead:
+    "Forty-seven countries in, I know how to turn a wish list into a trip that actually works: the right order, the right pace, and room for the good surprises. See where I've been, and let me help you get where you're going.",
+  hint: 'Hover the map, or pick a region to zoom in.',
+  cta: 'Help me plan a trip',
+  ctaSubject: 'Help planning a trip',
 }
 
 export const photography = {

@@ -415,6 +415,17 @@
   margin-top: 18px;
 }
 
+.btn-row.travel-cta {
+  margin: 4px 0 22px;
+}
+
+.map-hint {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--p-muted);
+  margin-bottom: 8px !important;
+}
+
 .inlink {
   display: inline-flex;
   align-items: center;

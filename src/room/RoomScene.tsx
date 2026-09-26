@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { sectionById, washington, type ObjectId, type SectionId } from '../content/site'
+import { LAPTOP_ARRIVED, laptopScreenBox } from '../laptop/screenBox'
 import { ambience } from '../lib/audio'
 import { useReducedMotion } from '../lib/hooks'
 import { supportsWebGL } from '../lib/webgl'
@@ -120,7 +121,11 @@ export function RoomScene({ onOpen, laptopOpen = false }: Props) {
     const v = view.current
     if (!v) return
     if (laptopOpen) {
-      v.focus(ROOM_PHOTO.laptopScreen, { instant: first.current })
+      v.focus(ROOM_PHOTO.laptopScreen, {
+        instant: first.current,
+        fit: laptopScreenBox,
+        done: () => window.dispatchEvent(new Event(LAPTOP_ARRIVED)),
+      })
     } else if (!first.current) {
       v.focus(null)
     }

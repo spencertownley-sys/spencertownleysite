@@ -9,6 +9,7 @@ import { useNow, useReducedMotion } from '../lib/hooks'
 import { navigate } from '../lib/router'
 import wallpaperLarge from '../assets/desk/wallpaper-2688.webp'
 import wallpaperSmall from '../assets/desk/wallpaper-1440.webp'
+import { LAPTOP_ARRIVED, laptopScreenBox } from './screenBox'
 
 type Item =
   | { kind: 'project'; id: string; label: string; project: Project }
@@ -38,6 +39,19 @@ export function LaptopDesktop({ compact, onClose }: Props) {
   const [openId, setOpenId] = useState<string | null>(null)
   const open = items.find((i) => i.id === openId) ?? null
   const iconRefs = useRef<Record<string, HTMLElement | null>>({})
+  const box = useScreenBox(!compact)
+  // show the desktop once the camera has landed on the screen, so the two line up
+  const [arrived, setArrived] = useState(compact)
+  useEffect(() => {
+    if (arrived) return
+    const land = () => setArrived(true)
+    window.addEventListener(LAPTOP_ARRIVED, land)
+    const fallback = window.setTimeout(land, 2400)
+    return () => {
+      window.removeEventListener(LAPTOP_ARRIVED, land)
+      window.clearTimeout(fallback)
+    }
+  }, [arrived])
 
   useLayoutEffect(() => {
     returnFocus.current = document.activeElement as HTMLElement | null
@@ -90,53 +104,85 @@ export function LaptopDesktop({ compact, onClose }: Props) {
     setOpenId(item.id)
   }
 
+  const leave = () => {
+    ambience.sfx('close')
+    onClose()
+  }
+
   return (
-    <motion.div
-      ref={root}
-      className={`desk ${compact ? 'is-compact' : ''}`}
-      role="dialog"
-      aria-modal="true"
-      aria-label={`${laptop.owner}: ${sectionById.projects.title}`}
-      tabIndex={-1}
-      onKeyDown={trap}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1, transition: { duration: reduced ? 0.2 : 0.45, delay: reduced || compact ? 0 : 0.85 } }}
-      exit={{ opacity: 0, transition: { duration: reduced ? 0.15 : 0.3 } }}
-    >
-      <picture className="desk-wallpaper" aria-hidden="true">
-        <source media="(min-width: 1500px)" srcSet={wallpaperLarge} />
-        <img src={wallpaperSmall} alt="" draggable={false} />
-      </picture>
+    <>
+      {box && (
+        // the room around the laptop: clicking it steps back out
+        <motion.div
+          className="desk-backdrop"
+          aria-hidden="true"
+          onClick={leave}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        />
+      )}
+      <motion.div
+        ref={root}
+        className={`desk ${compact ? 'is-compact' : 'is-framed'}`}
+        style={box ? { left: box.x, top: box.y, width: box.w, height: box.h } : undefined}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${laptop.owner}: ${sectionById.projects.title}`}
+        tabIndex={-1}
+        onKeyDown={trap}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: arrived ? 1 : 0, transition: { duration: reduced ? 0.2 : 0.35 } }}
+        exit={{ opacity: 0, transition: { duration: reduced ? 0.15 : 0.3 } }}
+      >
+        <img
+          className="desk-wallpaper"
+          src={wallpaperSmall}
+          srcSet={`${wallpaperSmall} 1440w, ${wallpaperLarge} 2688w`}
+          sizes={box ? `${Math.round(box.w)}px` : '100vw'}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+        />
 
-      <MenuBar onBack={() => {
-        ambience.sfx('close')
-        onClose()
-      }} />
+        <MenuBar onBack={leave} />
 
-      <div className="desk-surface">
-        <h2 className="sr-only">{sectionById.projects.title}</h2>
-        <ul className="desk-icons" aria-label="Desktop">
-          {items.map((item) => (
-            <li key={item.id}>
-              <DeskIcon item={item} selected={openId === item.id} onOpen={() => activate(item)} refFn={(el) => void (iconRefs.current[item.id] = el)} />
-            </li>
-          ))}
-        </ul>
+        <div className="desk-surface">
+          <h2 className="sr-only">{sectionById.projects.title}</h2>
+          <ul className="desk-icons" aria-label="Desktop">
+            {items.map((item) => (
+              <li key={item.id}>
+                <DeskIcon item={item} selected={openId === item.id} onOpen={() => activate(item)} refFn={(el) => void (iconRefs.current[item.id] = el)} />
+              </li>
+            ))}
+          </ul>
 
-        <aside className="desk-sticky" aria-label="Note">
-          <strong>{sectionById.projects.title}</strong>
-          <p>{projectsCopy.lead}</p>
-          <p className="sticky-hint">{compact ? laptop.touchHint : laptop.hint}</p>
-        </aside>
-      </div>
+          <aside className="desk-sticky" aria-label="Note">
+            <strong>{sectionById.projects.title}</strong>
+            <p>{projectsCopy.lead}</p>
+            <p className="sticky-hint">{compact ? laptop.touchHint : laptop.hint}</p>
+          </aside>
+        </div>
 
-      <AnimatePresence>
-        {open && (
-          <DeskWindow key={open.id} item={open} compact={compact} reduced={reduced} onClose={closeWindow} />
-        )}
-      </AnimatePresence>
-    </motion.div>
+        <AnimatePresence>
+          {open && (
+            <DeskWindow key={open.id} item={open} compact={compact} reduced={reduced} onClose={closeWindow} />
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </>
   )
+}
+
+/** The on-screen box of the laptop screen, kept in step with the window size. */
+function useScreenBox(framed: boolean) {
+  const [size, setSize] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }))
+  useEffect(() => {
+    const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight })
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return framed ? laptopScreenBox(size.w, size.h) : null
 }
 
 function MenuBar({ onBack }: { onBack: () => void }) {
