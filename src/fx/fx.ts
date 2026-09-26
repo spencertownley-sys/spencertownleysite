@@ -1,8 +1,7 @@
-// One full-screen canvas for the two effects that need real pixels:
-// the cursor trail and Brain mode's pixel dissolve / reassemble.
+// One full-screen canvas for the effect that needs real pixels:
+// Brain mode's pixel dissolve / reassemble.
 
 import type { Mode } from '../lib/router'
-import { DEFAULT_TRAIL, type TrailStyle } from '../lib/trail'
 
 interface Particle {
   hx: number
@@ -28,42 +27,11 @@ interface Group {
   onDone?: () => void
 }
 
-interface TrailPoint {
-  x: number
-  y: number
-  t: number
-  /** Distance travelled by the cursor so far, for dashes that stay put. */
-  d: number
-}
-
-interface Mark {
-  x: number
-  y: number
-  t: number
-}
-
-/** How long each trail style keeps a point. */
-const TRAIL_MS: Record<TrailStyle, number> = { ribbon: 420, ink: 900, route: 1500, ripple: 0, glow: 650, none: 0 }
-const RING_MS = 900
-const WAYPOINT_MS = 1500
-const DASH = [7, 6]
 const OUT_MS = 700
 const IN_MS = 520
 
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3)
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
-
-function sprite(color: string, size: number): HTMLCanvasElement {
-  const c = document.createElement('canvas')
-  c.width = c.height = size
-  const g = c.getContext('2d')!
-  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
-  grad.addColorStop(0, color)
-  grad.addColorStop(1, 'rgba(0,0,0,0)')
-  g.fillStyle = grad
-  g.fillRect(0, 0, size, size)
-  return c
-}
 
 /** Rasterizes a text element into particles positioned in viewport pixels. */
 function sampleText(el: HTMLElement, step: number): Particle[] {
@@ -135,24 +103,11 @@ class Fx {
   private raf = 0
   private mode: Mode = 'room'
   private reduced = false
-  private trail: TrailPoint[] = []
-  private trailStyle: TrailStyle = DEFAULT_TRAIL
-  private travelled = 0
-  private rings: Mark[] = []
-  private lastRing: { x: number; y: number } | null = null
-  private waypoints: Mark[] = []
-  private nextWaypoint = 140
   private groups = new Map<string, Group>()
-  private sprites: Record<string, HTMLCanvasElement> = {}
 
   attach(canvas: HTMLCanvasElement) {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
-    this.sprites = {
-      blue: sprite('rgba(61,220,255,0.55)', 96),
-      violet: sprite('rgba(214,92,255,0.42)', 96),
-      warm: sprite('rgba(217,164,65,0.22)', 96),
-    }
     this.resize()
   }
 
@@ -178,44 +133,6 @@ class Fx {
 
   setReducedMotion(r: boolean) {
     this.reduced = r
-    if (r) this.clearTrail()
-  }
-
-  setTrail(style: TrailStyle) {
-    this.trailStyle = style
-    this.clearTrail()
-  }
-
-  private clearTrail() {
-    this.trail = []
-    this.rings = []
-    this.waypoints = []
-    this.lastRing = null
-    this.kick()
-  }
-
-  pointer(x: number, y: number) {
-    if (this.reduced || this.trailStyle === 'none') return
-    const now = performance.now()
-    const last = this.trail[this.trail.length - 1]
-    const step = last ? Math.hypot(x - last.x, y - last.y) : 0
-    if (last && step < 1.5) return
-    this.travelled += step
-    this.trail.push({ x, y, t: now, d: this.travelled })
-    if (this.trail.length > 90) this.trail.shift()
-    if (this.trailStyle === 'ripple') {
-      const lr = this.lastRing
-      if (!lr || Math.hypot(x - lr.x, y - lr.y) > 38) {
-        this.rings.push({ x, y, t: now })
-        this.lastRing = { x, y }
-        if (this.rings.length > 30) this.rings.shift()
-      }
-    }
-    if (this.trailStyle === 'route' && this.travelled >= this.nextWaypoint) {
-      this.waypoints.push({ x, y, t: now })
-      this.nextWaypoint = this.travelled + 150
-    }
-    this.kick()
   }
 
   /**
@@ -297,8 +214,6 @@ class Fx {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0)
     let busy = false
 
-    if (this.drawTrail(ctx, now)) busy = true
-
     // particle groups
     for (const [key, g] of this.groups) {
       const t = now - g.t0
@@ -338,162 +253,6 @@ class Fx {
       } else if (g.state === 'in') busy = true
     }
     return busy
-  }
-
-  /* ---------------- cursor trails ---------------- */
-
-  /** Draws the cursor trail in the current style. Returns true while it is still fading. */
-  private drawTrail(ctx: CanvasRenderingContext2D, now: number): boolean {
-    const style = this.trailStyle
-    const life = TRAIL_MS[style]
-    this.trail = this.trail.filter((p) => now - p.t < Math.max(life, 1))
-    this.rings = this.rings.filter((r) => now - r.t < RING_MS)
-    this.waypoints = this.waypoints.filter((w) => now - w.t < WAYPOINT_MS)
-    if (!this.trail.length && !this.rings.length && !this.waypoints.length) return false
-    const brain = this.mode === 'brain'
-    ctx.save()
-    ctx.lineCap = 'round'
-    ctx.lineJoin = 'round'
-    ctx.globalCompositeOperation = brain ? 'lighter' : 'source-over'
-    if (style === 'glow') this.drawGlow(ctx, now, brain)
-    else if (style === 'ribbon') this.drawRibbon(ctx, now, brain)
-    else if (style === 'ink') this.drawInk(ctx, now, brain)
-    else if (style === 'route') this.drawRoute(ctx, now, brain)
-    else if (style === 'ripple') this.drawRipples(ctx, now, brain)
-    ctx.restore()
-    if (style === 'ripple') this.trail = []
-    return true
-  }
-
-  /** Fade for point i: older points and the tail end both fade out. */
-  private fade(i: number, now: number) {
-    const n = this.trail.length
-    const age = 1 - (now - this.trail[i].t) / TRAIL_MS[this.trailStyle]
-    const pos = n > 1 ? i / (n - 1) : 1
-    return Math.max(0, Math.min(age, 0.15 + pos))
-  }
-
-  /** Smooth curve segment ending at point i (midpoint to midpoint). */
-  private segment(ctx: CanvasRenderingContext2D, i: number) {
-    const p = this.trail
-    const a = p[i - 1]
-    const b = p[i]
-    const pre = i > 1 ? p[i - 2] : a
-    ctx.beginPath()
-    ctx.moveTo((pre.x + a.x) / 2, (pre.y + a.y) / 2)
-    if (i === p.length - 1) ctx.quadraticCurveTo(a.x, a.y, b.x, b.y)
-    else ctx.quadraticCurveTo(a.x, a.y, (a.x + b.x) / 2, (a.y + b.y) / 2)
-    ctx.stroke()
-  }
-
-  /** The original: soft glowing dots. */
-  private drawGlow(ctx: CanvasRenderingContext2D, now: number, brain: boolean) {
-    const n = this.trail.length
-    for (let i = 0; i < n; i++) {
-      const p = this.trail[i]
-      const life = 1 - (now - p.t) / TRAIL_MS.glow
-      const r = (brain ? 34 : 30) * (0.45 + 0.55 * life)
-      ctx.globalAlpha = life * (brain ? 0.55 : 0.9)
-      const s = brain ? (i % 3 === 0 ? this.sprites.violet : this.sprites.blue) : this.sprites.warm
-      ctx.drawImage(s, p.x - r, p.y - r, r * 2, r * 2)
-    }
-  }
-
-  /** A thin streak of light that tapers off behind the cursor, like a long exposure. */
-  private drawRibbon(ctx: CanvasRenderingContext2D, now: number, brain: boolean) {
-    const n = this.trail.length
-    const passes = brain
-      ? [
-          { w: 9, a: 0.22, c: (t: number) => (t > 0.5 ? '#3ddcff' : '#d65cff') },
-          { w: 2.4, a: 1, c: () => '#dffaff' },
-        ]
-      : [
-          { w: 13, a: 0.34, c: () => '#ff8a33' },
-          { w: 5, a: 0.5, c: () => '#ffc27a' },
-          { w: 2.4, a: 1, c: () => '#fffaf0' },
-        ]
-    for (const pass of passes) {
-      for (let i = 1; i < n; i++) {
-        const f = this.fade(i, now)
-        if (f <= 0) continue
-        ctx.globalAlpha = pass.a * f
-        ctx.lineWidth = pass.w * (0.2 + 0.8 * f)
-        ctx.strokeStyle = pass.c(i / (n - 1))
-        this.segment(ctx, i)
-      }
-    }
-  }
-
-  /** A fountain pen line: thicker when the cursor slows, thinner when it rushes. */
-  private drawInk(ctx: CanvasRenderingContext2D, now: number, brain: boolean) {
-    const p = this.trail
-    ctx.strokeStyle = brain ? '#c9f4ff' : '#3a2616'
-    for (let i = 1; i < p.length; i++) {
-      const f = this.fade(i, now)
-      if (f <= 0) continue
-      const dt = Math.max(1, p[i].t - p[i - 1].t)
-      const speed = Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y) / dt
-      const nib = Math.max(1, Math.min(4.2, 4.4 - speed * 1.6))
-      ctx.globalAlpha = (brain ? 0.8 : 0.78) * f
-      ctx.lineWidth = nib * (0.4 + 0.6 * f)
-      this.segment(ctx, i)
-    }
-  }
-
-  /** A dashed route like the ones on the sailing chart, with waypoints dropped along the way. */
-  private drawRoute(ctx: CanvasRenderingContext2D, now: number, brain: boolean) {
-    const p = this.trail
-    const period = DASH[0] + DASH[1]
-    ctx.setLineDash(DASH)
-    ctx.strokeStyle = brain ? '#3ddcff' : '#b3402e'
-    ctx.lineWidth = 2.2
-    ctx.lineCap = 'butt'
-    for (let i = 1; i < p.length; i++) {
-      const f = this.fade(i, now)
-      if (f <= 0) continue
-      ctx.globalAlpha = 0.9 * f
-      // dashes are anchored to the distance travelled, so they stay put instead of crawling
-      ctx.lineDashOffset = p[i - 1].d % period
-      ctx.beginPath()
-      ctx.moveTo(p[i - 1].x, p[i - 1].y)
-      ctx.lineTo(p[i].x, p[i].y)
-      ctx.stroke()
-    }
-    ctx.setLineDash([])
-    for (const w of this.waypoints) {
-      const k = (now - w.t) / WAYPOINT_MS
-      const pop = Math.min(1, k * 6)
-      ctx.globalAlpha = 1 - k
-      ctx.beginPath()
-      ctx.arc(w.x, w.y, 4.2 * (0.6 + 0.4 * pop), 0, Math.PI * 2)
-      ctx.fillStyle = brain ? '#05070a' : '#fff8ec'
-      ctx.fill()
-      ctx.lineWidth = 2
-      ctx.strokeStyle = brain ? '#d65cff' : '#b3402e'
-      ctx.stroke()
-    }
-  }
-
-  /** Rings spreading out behind the cursor, like a finger drawn across still water. */
-  private drawRipples(ctx: CanvasRenderingContext2D, now: number, brain: boolean) {
-    for (const r of this.rings) {
-      const k = (now - r.t) / RING_MS
-      const e = 1 - Math.pow(1 - k, 3)
-      const radius = 3 + 26 * e
-      const a = (1 - k) * 0.85
-      ctx.beginPath()
-      ctx.arc(r.x, r.y, radius, 0, Math.PI * 2)
-      if (!brain) {
-        ctx.globalAlpha = a * 0.35
-        ctx.lineWidth = 3.2
-        ctx.strokeStyle = '#3a2616'
-        ctx.stroke()
-      }
-      ctx.globalAlpha = a
-      ctx.lineWidth = 1.5
-      ctx.strokeStyle = brain ? '#3ddcff' : '#fffaf0'
-      ctx.stroke()
-    }
   }
 }
 

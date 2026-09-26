@@ -671,47 +671,29 @@ a {
   }
 }
 
-/* ---------- cursor trail picker (only with ?trail= in the URL) ---------- */
+/* ---------- a soft light under the mouse ---------- */
 
-.trail-picker {
+.cursor-glow {
   position: fixed;
-  z-index: 70;
-  left: 50%;
-  top: calc(var(--bar-h) + 8px);
-  translate: -50% 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  max-width: calc(100vw - 24px);
-  padding: 6px 8px;
-  border-radius: 14px;
-  background: rgba(35, 28, 26, 0.86);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  font-family: var(--font-room);
+  z-index: 21;
+  left: 0;
+  top: 0;
+  width: 240px;
+  height: 240px;
+  margin: -120px 0 0 -120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 246, 230, 0.2) 0%, rgba(255, 240, 218, 0.085) 38%, rgba(255, 240, 218, 0) 68%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  will-change: transform;
 }
 
-.trail-picker-title {
-  padding: 0 6px 0 4px;
-  font-size: 12px;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.7);
+.cursor-glow.is-on {
+  opacity: 1;
 }
 
-.trail-picker button {
-  padding: 5px 11px;
-  border: 0;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.trail-picker button[aria-pressed='true'] {
-  background: #d6543f;
+html[data-mode='brain'] .cursor-glow {
+  background: radial-gradient(circle, rgba(61, 220, 255, 0.11) 0%, rgba(61, 220, 255, 0.045) 38%, rgba(61, 220, 255, 0) 68%);
 }

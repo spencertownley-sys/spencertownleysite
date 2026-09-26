@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { BottomBar, TopBar } from './components/Chrome'
 import { sectionForPath, site, type SectionId, sectionById } from './content/site'
+import { CursorGlow } from './fx/CursorGlow'
 import { FxCanvas } from './fx/FxCanvas'
 import { ambience } from './lib/audio'
 import { COMPACT_QUERY, useMediaQuery, useReducedMotion } from './lib/hooks'
@@ -98,6 +99,7 @@ export default function App() {
       </main>
       <BottomBar compact={compact} mode={mode} />
       <FxCanvas mode={mode} />
+      <CursorGlow />
       <PanelHost section={laptopOpen ? undefined : section} mode={mode} compact={compact} onClose={close} />
       <AnimatePresence initial={false}>{laptopOpen && <LaptopDesktop key="laptop" compact={compact} onClose={close} />}</AnimatePresence>
     </div>
