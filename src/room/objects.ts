@@ -59,8 +59,8 @@ export const ROOM_PHOTO = {
   chair: { src: chairSrc, rect: { x: 0.348438, y: 0.575362, w: 0.210156, h: 0.424638 }, depth: 0.86 },
   /** The laptop's screen, which the camera zooms into. */
   laptopScreen: { x: 0.45677, y: 0.40691, w: 0.09427, h: 0.09893 },
-  /** The TV and its cabinet (the camera frames all of it for the game console)... */
-  tvUnit: { x: 0, y: 0.4223, w: 0.2383, h: 0.406 },
+  /** The TV and the cabinet body (legs left out, so the camera comes in close)... */
+  tvUnit: { x: 0, y: 0.4223, w: 0.2383, h: 0.33 },
   /** ...and the TV's glass, where the game menu shows. */
   tvScreen: { x: 0.03776, y: 0.44704, w: 0.08776, h: 0.11619 },
   /** The window glass above the desk: hovering it shows a note about Washington. */

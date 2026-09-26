@@ -37,8 +37,8 @@ interface Margins {
 const targets: Record<ZoomTarget, { frame: Rect; screen: Rect; margins: Margins }> = {
   // the laptop screen fills the space between the top and bottom bars, bezel still in view
   laptop: { frame: ROOM_PHOTO.laptopScreen, screen: ROOM_PHOTO.laptopScreen, margins: { top: 86, bottom: 84, side: (w) => Math.max(40, w * 0.06) } },
-  // the whole TV and cabinet, with a little room around them
-  console: { frame: ROOM_PHOTO.tvUnit, screen: ROOM_PHOTO.tvScreen, margins: { top: 78, bottom: 72, side: () => 28 } },
+  // the TV and cabinet, filling the space between the top and bottom bars
+  console: { frame: ROOM_PHOTO.tvUnit, screen: ROOM_PHOTO.tvScreen, margins: { top: 76, bottom: 68, side: () => 24 } },
 }
 
 /**
