@@ -43,6 +43,12 @@ export interface ProjectedZone {
   h: number
 }
 
+/** The zoom's progress (0 in the room, 1 fully in) and where the zoom target's screen is right now. */
+export interface FocusFrame {
+  value: number
+  screen: { x: number; y: number; w: number; h: number } | null
+}
+
 export interface Cutout {
   src: string
   /** Where the cut-out sits in the photo, 0..1. */
@@ -66,7 +72,7 @@ export interface RoomViewOptions {
   reducedMotion: boolean
   /** Open on the whole room, then ease in and start drifting. */
   intro: boolean
-  onFrame?: (spots: ProjectedSpot[], zones: ProjectedZone[]) => void
+  onFrame?: (spots: ProjectedSpot[], zones: ProjectedZone[], focus: FocusFrame) => void
   onReady?: () => void
 }
 
@@ -169,10 +175,10 @@ void main() {
     // the sasquatch, behind anything leafy, softened by the air between
     float inSprite = step(0.0, sp.x) * step(sp.x, 64.0) * step(0.0, sp.y) * step(sp.y, 64.0);
     float lum = dot(col, vec3(0.3, 0.59, 0.11));
-    float leafy = max(smoothstep(0.725, 0.627, lum), smoothstep(0.086, 0.165, col.r - col.b));
+    float leafy = max(smoothstep(0.725, 0.627, lum), smoothstep(0.137, 0.216, col.r - col.b) * smoothstep(0.87, 0.804, lum));
     float k = uSqOn * inSprite * m.b * (1.0 - leafy) * smoothstep(62.0, 55.0, sp.y);
     sq *= k;
-    sq.rgb = sq.rgb * 0.72 + vec3(0.84, 0.83, 0.83) * sq.a * 0.28;
+    sq.rgb = sq.rgb * 0.75 + vec3(0.93, 0.86, 0.78) * sq.a * 0.25;
     col = col * (1.0 - sq.a) + sq.rgb;
 
     // birds: tiny dark flecks with flapping wings, only against open sky
@@ -226,6 +232,26 @@ const FOCUS_DEPTH = 0.24
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v))
 const ease = (t: number) => t * t * (3 - 2 * t)
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+
+/** A CSS-style cubic-bezier easing (x1, y1, x2, y2), solved for x with a few Newton steps. */
+function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
+  const bez = (t: number, a: number, b: number) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3
+  const slope = (t: number, a: number, b: number) => 3 * a * (1 - t) ** 2 + 6 * (b - a) * t * (1 - t) + 3 * (1 - b) * t * t
+  return (x: number) => {
+    if (x <= 0) return 0
+    if (x >= 1) return 1
+    let t = x
+    for (let i = 0; i < 6; i++) {
+      const d = slope(t, x1, x2)
+      if (Math.abs(d) < 1e-6) break
+      t = clamp(t - (bez(t, x1, x2) - x) / d, 0, 1)
+    }
+    return bez(t, y1, y2)
+  }
+}
+
+// Flying into the laptop or the TV: gets going right away, no lurch in the middle, and a long soft landing.
+const flyEase = cubicBezier(0.35, 0.1, 0.3, 1)
 
 interface Cam {
   cx: number
@@ -285,6 +311,8 @@ export class RoomView {
   private focusDone: (() => void) | null = null
   private focusVal = 0
   private focusFit: ((w: number, h: number) => { x: number; y: number; w: number; h: number }) | null = null
+  /** A screen inside the focus rect (the TV glass) that overlays follow while the camera flies. */
+  private focusScreen: { rect: { x: number; y: number; w: number; h: number }; depth: number } | null = null
   /** Canvas size last drawn while fully zoomed in; the frame is static then, so skip redraws. */
   private focusDrawn = ''
   /** Bumped on every texture upload, so a sharper photo arriving mid-zoom gets drawn. */
@@ -333,11 +361,17 @@ export class RoomView {
    */
   focus(
     rect: { x: number; y: number; w: number; h: number } | null,
-    opts: { instant?: boolean; done?: () => void; fit?: (w: number, h: number) => { x: number; y: number; w: number; h: number } } = {},
+    opts: {
+      instant?: boolean
+      done?: () => void
+      fit?: (w: number, h: number) => { x: number; y: number; w: number; h: number }
+      screen?: { rect: { x: number; y: number; w: number; h: number }; depth: number }
+    } = {},
   ) {
     if (rect) {
       this.focusRect = rect
       this.focusFit = opts.fit ?? null
+      this.focusScreen = opts.screen ?? null
       this.loadLargest()
     }
     const to = rect ? 1 : 0
@@ -345,7 +379,7 @@ export class RoomView {
     this.focusFrom = instant ? to : this.focusVal
     this.focusTo = to
     this.focusStart = performance.now()
-    this.focusDur = (rect ? 1250 : 1000) * Math.max(0.35, Math.abs(to - this.focusVal))
+    this.focusDur = (rect ? 1150 : 950) * Math.max(0.35, Math.abs(to - this.focusVal))
     this.focusDone = opts.done ?? null
     if (instant) this.focusVal = to
     this.skipIntro()
@@ -696,7 +730,7 @@ export class RoomView {
     // focus tween
     if (this.focusVal !== this.focusTo || this.focusDone) {
       const p = clamp((now - this.focusStart) / this.focusDur, 0, 1)
-      this.focusVal = this.focusFrom + (this.focusTo - this.focusFrom) * easeInOut(p)
+      this.focusVal = this.focusFrom + (this.focusTo - this.focusFrom) * flyEase(p)
       if (p >= 1) {
         this.focusVal = this.focusTo
         const cb = this.focusDone
@@ -774,7 +808,14 @@ export class RoomView {
         const b = this.project(z.x + z.w, z.y + z.h, z.depth, cam)
         return { id: z.id, x: a.x, y: a.y, w: b.x - a.x, h: b.y - a.y }
       })
-      cb(spots, zones)
+      let screen: FocusFrame['screen'] = null
+      const fs = this.focusScreen
+      if (fs && this.focusVal > 0) {
+        const a = this.project(fs.rect.x, fs.rect.y, fs.depth, cam)
+        const b = this.project(fs.rect.x + fs.rect.w, fs.rect.y + fs.rect.h, fs.depth, cam)
+        screen = { x: a.x, y: a.y, w: b.x - a.x, h: b.y - a.y }
+      }
+      cb(spots, zones, { value: this.focusVal, screen })
     }
     this.raf = requestAnimationFrame(this.tick)
   }

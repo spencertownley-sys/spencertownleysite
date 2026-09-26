@@ -1,5 +1,6 @@
 // Life outside the window: the trees sway a little, a few faint clouds drift, birds
-// cross now and then, and every 90 seconds a sasquatch walks along the hillside.
+// cross now and then, and every 90 seconds a sasquatch walks along the ridge of the hill
+// in the lower left pane.
 // The shader in roomView.ts draws all of it in photo space, so it moves with the
 // camera and stays behind the window frame. This file holds the where and the when.
 import maskSrc from '../assets/room/window-mask.webp'
@@ -31,20 +32,20 @@ export const SASQUATCH = {
   /** Photo px per second, and seconds per full stride (matched so the feet do not slide). */
   speed: 22,
   cycle: 1.25,
-  /** From behind the tall tree to past the right edge of the window. */
-  fromX: 2120,
-  toX: 2510,
+  /** Out of the trees on the hill in the lower left pane, down the ridge, and out behind the window frame. */
+  fromX: 1600,
+  toX: 1875,
 }
 
-// The ground he walks on: a trail along the hillside, low enough that the bushes in
-// front always hide his feet (measured from where the foliage tops out).
+// The ground he walks on: the ridge line of the hill, just low enough that the treetops in
+// front always hide his feet (measured from where the foliage tops out against the haze).
 const GROUND: [number, number][] = [
-  [2100, 902],
-  [2285, 902],
-  [2330, 889],
-  [2405, 884],
-  [2445, 906],
-  [2520, 908],
+  [1580, 664],
+  [1690, 668],
+  [1760, 678],
+  [1800, 684],
+  [1850, 698],
+  [1880, 700],
 ]
 
 function groundAt(x: number) {

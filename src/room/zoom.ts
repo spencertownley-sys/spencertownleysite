@@ -2,7 +2,7 @@
 // cabinet (the game console). The camera (roomView) and the overlay drawn on top
 // both use these boxes, so the overlay lands exactly on the screen in the photo.
 import { useEffect, useState } from 'react'
-import { ROOM_PHOTO } from './objects'
+import { ROOM_PHOTO, roomObjects } from './objects'
 
 export type ZoomTarget = 'laptop' | 'console'
 
@@ -34,11 +34,16 @@ interface Margins {
   side: (w: number) => number
 }
 
-const targets: Record<ZoomTarget, { frame: Rect; screen: Rect; margins: Margins }> = {
+const targets: Record<ZoomTarget, { frame: Rect; screen: Rect; depth: number; margins: Margins }> = {
   // the laptop screen fills the space between the top and bottom bars, bezel still in view
-  laptop: { frame: ROOM_PHOTO.laptopScreen, screen: ROOM_PHOTO.laptopScreen, margins: { top: 86, bottom: 84, side: (w) => Math.max(40, w * 0.06) } },
+  laptop: {
+    frame: ROOM_PHOTO.laptopScreen,
+    screen: ROOM_PHOTO.laptopScreen,
+    depth: roomObjects.laptop.spot.depth,
+    margins: { top: 86, bottom: 84, side: (w) => Math.max(40, w * 0.06) },
+  },
   // the TV and cabinet, filling the space between the top and bottom bars
-  console: { frame: ROOM_PHOTO.tvUnit, screen: ROOM_PHOTO.tvScreen, margins: { top: 76, bottom: 68, side: () => 24 } },
+  console: { frame: ROOM_PHOTO.tvUnit, screen: ROOM_PHOTO.tvScreen, depth: roomObjects.tv.spot.depth, margins: { top: 76, bottom: 68, side: () => 24 } },
 }
 
 /**
@@ -85,6 +90,16 @@ export function screenBox(target: ZoomTarget, w: number, h: number): Box {
 }
 
 export const zoomFrame = (target: ZoomTarget) => targets[target].frame
+
+/** The target's screen in the photo, and its depth, so the camera can report where it is mid-flight. */
+export const zoomScreen = (target: ZoomTarget) => ({ rect: targets[target].screen, depth: targets[target].depth })
+
+/**
+ * Live camera state, written by the Room every frame: how far in the zoom is (0..1, eased)
+ * and where the target's screen is on screen right now (null when not zooming). Overlays
+ * read it in their own animation frames to stay glued to the photo while the camera moves.
+ */
+export const zoomTrack: { progress: number; box: Box | null } = { progress: 0, box: null }
 
 /** The screen box for a target, kept in step with the window size (null: not framed). */
 export function useScreenBox(target: ZoomTarget | null) {

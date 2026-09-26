@@ -1,13 +1,14 @@
-// The console under the TV. The Room camera flies to the TV cabinet, then the view
-// merges into a head-on close-up of it (the close-up grows out of the TV's spot in the
-// room), the set powers on, and an old-school menu lists the games.
+// The console under the TV. The Room camera flies to the TV cabinet and, on the way in,
+// the view merges into a head-on close-up of it (the close-up rides on the room's TV and
+// fades in, so the whole move reads as one zoom), the set powers on, and an old-school
+// menu lists the games.
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, usePresence } from 'framer-motion'
 import '@fontsource/press-start-2p/latin-400.css'
 import { games, sectionById, type Game } from '../content/site'
 import { ambience } from '../lib/audio'
 import { useMediaQuery, useReducedMotion } from '../lib/hooks'
-import { screenBox, useArrived, type Box } from '../room/zoom'
+import { screenBox, zoomTrack, type Box } from '../room/zoom'
 import tallSmall from '../assets/tv/tv-tall-1080.webp'
 import tallLarge from '../assets/tv/tv-tall-1620.webp'
 import wideSmall from '../assets/tv/tv-wide-2560.webp'
@@ -38,6 +39,11 @@ const CLOSEUPS = {
     screen: { x: 450, y: 990, w: 970, h: 715 },
     subject: { x: 300, y: 880, w: 1510, h: 1000 },
   },
+}
+
+const smooth = (a: number, b: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
+  return t * t * (3 - 2 * t)
 }
 
 /** Warm the close-ups up before they are needed (the Room calls this on hovering the console). */
@@ -81,9 +87,12 @@ type Screen = { kind: 'menu' } | { kind: 'soon'; game: Game; n: number } | { kin
 export function GameConsole({ compact, camera, onClose }: Props) {
   const reduced = useReducedMotion()
   const touch = useMediaQuery('(hover: none)') || compact
-  const arrived = useArrived('console', !camera)
-  const [imgReady, setImgReady] = useState(false)
+  const [isPresent, safeToRemove] = usePresence()
   const [merged, setMerged] = useState(false)
+  const closeup = useRef<HTMLDivElement>(null)
+  const img = useRef<HTMLImageElement>(null)
+  /** When the close-up photo finished loading (0 until then). */
+  const loadedAt = useRef(0)
   const root = useRef<HTMLDivElement>(null)
   const rows = useRef<(HTMLButtonElement | null)[]>([])
   const returnFocus = useRef<HTMLElement | null>(null)
@@ -183,20 +192,79 @@ export function GameConsole({ compact, camera, onClose }: Props) {
   const frame = layout.screen
   const scale = Math.min(frame.w / LOGICAL_W, frame.h / LOGICAL_H)
 
-  // The merge: the close-up starts laid over the TV in the room (same size, same place)
-  // and grows to fill the view while it fades in. Leaving plays it backwards.
-  const from = (() => {
-    if (!camera || reduced) return { opacity: 0 }
-    const room = screenBox('console', view.w, view.h)
-    const k = room.w / frame.w
-    return {
-      opacity: 0,
-      scale: k,
-      x: room.x + room.w / 2 - (frame.x + frame.w / 2) * k,
-      y: room.y + room.h / 2 - (frame.y + frame.h / 2) * k,
+  // Latest layout, for the animation loop below.
+  const live = useRef({ frame, view, tracking: camera && !reduced })
+  useEffect(() => {
+    live.current = { frame, view, tracking: camera && !reduced }
+  })
+
+  useEffect(() => {
+    if (img.current?.complete && img.current.naturalWidth) loadedAt.current ||= performance.now()
+  }, [])
+
+  // The merge, one frame at a time. While the camera flies in, the close-up rides on the
+  // room's TV (same place, same size) and fades in with a soft edge, then settles into the
+  // head-on view exactly as the camera lands. Leaving plays it backwards as the camera
+  // pulls out. Without the camera (list view, reduced motion) it simply fades.
+  useEffect(() => {
+    let raf = 0
+    let done = false
+    const since = performance.now()
+    const tick = (now: number) => {
+      const el = closeup.current
+      const { frame, view, tracking } = live.current
+      const loaded = loadedAt.current
+      const fade = loaded ? Math.min(1, (now - loaded) / 250) : 0
+      let w = 1
+      let op: number
+      if (tracking) {
+        const p = zoomTrack.progress
+        w = isPresent ? smooth(0.4, 1, p) : smooth(0.5, 1, p)
+        op = Math.min(isPresent ? smooth(0.3, 0.8, p) : smooth(0.5, 0.92, p), fade)
+      } else {
+        op = isPresent ? fade : Math.max(0, 1 - (now - since) / 200)
+      }
+      // never hang on the way out, whatever the camera is doing
+      if (!isPresent) op = Math.min(op, 1 - Math.max(0, now - since - 1100) / 200)
+      if (el) {
+        if (tracking && w < 1) {
+          const room = zoomTrack.box ?? screenBox('console', view.w, view.h)
+          const k = room.w / frame.w
+          const s = k + (1 - k) * w
+          const tx = (room.x + room.w / 2 - (frame.x + frame.w / 2) * k) * (1 - w)
+          const ty = (room.y + room.h / 2 - (frame.y + frame.h / 2) * k) * (1 - w)
+          el.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${s.toFixed(4)})`
+          // soft edges while it is still growing out of the room: a glow around the TV that
+          // opens up as it lands, and feathered sides for when it is smaller than the view
+          const reach = w * w * Math.hypot(view.w, view.h) * 1.7
+          const glow = `radial-gradient(ellipse ${(frame.w * 0.85 + reach).toFixed(0)}px ${(frame.h + reach).toFixed(0)}px at ${(frame.x + frame.w / 2).toFixed(0)}px ${(frame.y + frame.h / 2).toFixed(0)}px, #000 58%, transparent 100%)`
+          const f = ((1 - w) * 80).toFixed(0)
+          const side = (dir: string) => `linear-gradient(${dir}, transparent, #000 ${f}px, #000 calc(100% - ${f}px), transparent)`
+          const mask = `${glow}, ${side('to right')}, ${side('to bottom')}`
+          el.style.setProperty('mask-image', mask)
+          el.style.setProperty('-webkit-mask-image', mask)
+          el.style.setProperty('mask-composite', 'intersect')
+          el.style.setProperty('-webkit-mask-composite', 'source-in')
+        } else {
+          el.style.transform = ''
+          for (const prop of ['mask-image', '-webkit-mask-image', 'mask-composite', '-webkit-mask-composite']) el.style.removeProperty(prop)
+        }
+        el.style.opacity = op.toFixed(3)
+      }
+      if (isPresent && !done && op >= 1 && w >= 1) {
+        done = true
+        setMerged(true)
+        return // settled; nothing moves until it is time to leave
+      }
+      if (!isPresent && op <= 0) {
+        safeToRemove?.()
+        return
+      }
+      raf = requestAnimationFrame(tick)
     }
-  })()
-  const show = arrived && imgReady
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [isPresent, safeToRemove])
 
   const clickAway = (e: MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'IMG') leave()
@@ -204,29 +272,18 @@ export function GameConsole({ compact, camera, onClose }: Props) {
 
   return (
     <>
-      <motion.div
-        className={`tv-closeup ${show ? 'is-shown' : ''}`}
-        style={{ transformOrigin: '0 0' }}
-        initial={from}
-        animate={show ? { opacity: 1, scale: 1, x: 0, y: 0 } : from}
-        exit={{ ...from, transition: { duration: reduced ? 0.15 : 0.5, ease: [0.4, 0, 0.6, 1] } }}
-        transition={{ duration: reduced ? 0.25 : 0.8, ease: [0.45, 0, 0.2, 1] }}
-        onAnimationComplete={() => {
-          if (show) setMerged(true)
-        }}
-        onClick={clickAway}
-        aria-hidden="true"
-      >
+      <div ref={closeup} className="tv-closeup" style={{ opacity: 0 }} onClick={clickAway} aria-hidden="true">
         <img
+          ref={img}
           src={layout.c.src}
           srcSet={layout.c.srcSet}
           sizes={`${Math.round(layout.img.w)}px`}
           alt=""
           draggable={false}
-          onLoad={() => setImgReady(true)}
+          onLoad={() => void (loadedAt.current ||= performance.now())}
           style={{ left: layout.img.x, top: layout.img.y, width: layout.img.w, height: layout.img.h }}
         />
-      </motion.div>
+      </div>
       <motion.button
         type="button"
         className="tv-back"

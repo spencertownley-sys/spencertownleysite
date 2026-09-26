@@ -5,12 +5,12 @@ import { ambience } from '../lib/audio'
 import { useReducedMotion } from '../lib/hooks'
 import { supportsWebGL } from '../lib/webgl'
 import { ROOM_PHOTO, roomObjects } from './objects'
-import { RoomView, type ProjectedSpot, type ProjectedZone } from './roomView'
-import { ZOOM_ARRIVED, zoomBox, zoomFrame, type ZoomTarget } from './zoom'
+import { RoomView, type FocusFrame, type ProjectedSpot, type ProjectedZone } from './roomView'
+import { ZOOM_ARRIVED, zoomBox, zoomFrame, zoomScreen, zoomTrack, type ZoomTarget } from './zoom'
 
 const ids = Object.keys(roomObjects) as ObjectId[]
 
-type FrameFn = (s: ProjectedSpot[], z: ProjectedZone[]) => void
+type FrameFn = (s: ProjectedSpot[], z: ProjectedZone[], f: FocusFrame) => void
 
 /** Starts the photo renderer on a canvas; shared by the full scene and the mobile hero. */
 export function useRoomView(opts: { interactive: boolean; intro?: boolean; onFrame?: FrameFn }) {
@@ -42,7 +42,7 @@ export function useRoomView(opts: { interactive: boolean; intro?: boolean; onFra
       interactive,
       intro,
       reducedMotion: reduced,
-      onFrame: (s, z) => frame.current?.(s, z),
+      onFrame: (s, z, f) => frame.current?.(s, z, f),
       onReady: () => setReady(true),
     })
     view.current = v
@@ -83,7 +83,9 @@ export function RoomScene({ onOpen, zoomTo = null, touch = false, onList }: Prop
   const hovering = useRef<string | null>(null)
   const pointer = useRef('mouse')
 
-  const onFrame = useCallback<FrameFn>((list, zones) => {
+  const onFrame = useCallback<FrameFn>((list, zones, focus) => {
+    zoomTrack.progress = focus.value
+    zoomTrack.box = focus.screen
     for (const s of list) {
       const el = spots.current[s.id]
       if (!el) continue
@@ -131,6 +133,7 @@ export function RoomScene({ onOpen, zoomTo = null, touch = false, onList }: Prop
       v.focus(zoomFrame(target), {
         instant: first.current,
         fit: (w, h) => zoomBox(target, w, h),
+        screen: zoomScreen(target),
         done: () => window.dispatchEvent(new CustomEvent(ZOOM_ARRIVED, { detail: target })),
       })
     } else if (!first.current) {
