@@ -119,11 +119,9 @@ const server = createServer(async (req, res) => {
     const ext = extname(file).toLowerCase()
     const headers = {
       'Content-Type': TYPES[ext] || 'application/octet-stream',
-      'Cache-Control': pathname.startsWith('/assets/')
-        ? 'public, max-age=31536000, immutable'
-        : ext === '.html'
-          ? 'no-cache'
-          : 'public, max-age=86400',
+      // Hashed build files never change. Everything else keeps its name across
+      // deploys, so browsers must check back (a cheap 304 when nothing changed).
+      'Cache-Control': pathname.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache',
       ETag: `"${info.size.toString(36)}-${info.mtimeMs.toString(36)}"`,
       'Last-Modified': info.mtime.toUTCString(),
       Vary: 'Accept-Encoding',

@@ -7,6 +7,8 @@ import { ExternalIcon } from '../components/icons'
 import { ambience } from '../lib/audio'
 import { useNow, useReducedMotion } from '../lib/hooks'
 import { navigate } from '../lib/router'
+import wallpaperLarge from '../assets/desk/wallpaper-2688.webp'
+import wallpaperSmall from '../assets/desk/wallpaper-1440.webp'
 
 type Item =
   | { kind: 'project'; id: string; label: string; project: Project }
@@ -102,8 +104,8 @@ export function LaptopDesktop({ compact, onClose }: Props) {
       exit={{ opacity: 0, transition: { duration: reduced ? 0.15 : 0.3 } }}
     >
       <picture className="desk-wallpaper" aria-hidden="true">
-        <source media="(min-width: 1500px)" srcSet="/desk/wallpaper-2688.webp" />
-        <img src="/desk/wallpaper-1440.webp" alt="" draggable={false} />
+        <source media="(min-width: 1500px)" srcSet={wallpaperLarge} />
+        <img src={wallpaperSmall} alt="" draggable={false} />
       </picture>
 
       <MenuBar onBack={() => {

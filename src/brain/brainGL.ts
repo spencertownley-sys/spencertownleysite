@@ -19,7 +19,7 @@ const BLUE = new THREE.Color(BLUE_HEX)
 const VIOLET = new THREE.Color(VIOLET_HEX)
 
 /** Revolutions per minute: slow enough to read the labels as they pass. */
-const RPM = 2.5
+const RPM = 2
 const SPEED = (RPM * Math.PI * 2) / 60
 const START_ANGLE = -Math.PI / 2 // frontal lobe facing left, like a textbook side view
 

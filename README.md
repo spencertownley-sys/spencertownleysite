@@ -6,7 +6,7 @@ Personal portfolio for Spencer Townley. Two toggleable experiences over the same
 
 - React 19 + Vite + TypeScript
 - **Room**: a photoreal room photo plus a depth map, rendered by a small WebGL shader (`src/room/roomView.ts`). It opens on the whole room, eases in, then drifts slowly with real parallax. The chair is its own cut-out layer so it never smears. Hotspots and the window's hover note are projected with the same math. Clicking the laptop flies the camera into its screen, where a small desktop (`src/laptop/`) has a folder per project. Falls back to a panning image without WebGL.
-- **Brain**: a procedural holographic brain in three.js (`src/brain/brainGL.ts`, lazy loaded) that rotates slowly (2.5 rpm, `RPM` in brainGL.ts). Nodes are pinned to 3D points on it and their labels follow every frame. Falls back to the flat brain artwork and a stacked list without WebGL.
+- **Brain**: a procedural holographic brain in three.js (`src/brain/brainGL.ts`, lazy loaded) that rotates slowly (2 rpm, `RPM` in brainGL.ts). Nodes are pinned to 3D points on it and their labels follow every frame. Falls back to the flat brain artwork and a stacked list without WebGL.
 - Framer Motion for UI motion and the Room/Brain transition
 - One 2D canvas (`src/fx/fx.ts`) for the Brain pixel dissolve, and a very soft glow under the mouse (`src/fx/CursorGlow.tsx`, styled in `base.css`)
 - Web Audio for the ambient sound beds (generated in code, no audio files)
@@ -40,7 +40,7 @@ Common updates:
 
 ## Room photo
 
-The room is an AI-generated photo (`assets/room/room-source.jpg`, 3840 x 2143) with a depth map estimated by Depth Anything V2. The chair is served as its own layer so it moves as one solid piece: `public/room/chair.webp` is the chair cut out with alpha (matte in `assets/room/chair-matte.png`), and `room-{width}.webp` is the room with the chair painted out. `room-still-*.webp` is the complete photo for browsers without WebGL. Also in `public/room/`: `depth.png` and a close-up crop per object in `crops/`. Hotspot positions (0..1 across the photo), their depth, the chair rectangle, the laptop screen, and the window zone are in `src/room/objects.ts`.
+The room is an AI-generated photo (`assets/room/room-source.jpg`, 3840 x 2143) with a depth map estimated by Depth Anything V2. The chair is served as its own layer so it moves as one solid piece: `src/assets/room/chair.webp` is the chair cut out with alpha (matte in `assets/room/chair-matte.png`), and `room-{width}.webp` is the room with the chair painted out. `room-still-*.webp` is the complete photo for browsers without WebGL. Also in `src/assets/room/`: `depth.png` and a close-up crop per object in `crops/`. These are imported by `objects.ts` rather than served from `public/`, so each build gives them content-hashed names and a new photo can never hide behind a browser's cached copy of the old one. Hotspot positions (0..1 across the photo), their depth, the chair rectangle, the laptop screen, and the window zone are in `src/room/objects.ts`.
 
 To use a different photo (for example a real photo of your own space), export the same set of files at the same names, update the spots and rectangles in `objects.ts`, and update `ROOM_PHOTO.aspect` if the proportions change. Without a separate foreground layer, drop `chair` from `ROOM_PHOTO`.
 

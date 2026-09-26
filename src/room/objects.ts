@@ -1,4 +1,16 @@
 import type { ObjectId, SectionId } from '../content/site'
+// Imported (not in public/) so every file gets a content hash in its name: a new
+// photo can never be hidden behind a browser's cached copy of the old one.
+import chairSrc from '../assets/room/chair.webp'
+import depthSrc from '../assets/room/depth.png'
+import room1280 from '../assets/room/room-1280.webp'
+import room1920 from '../assets/room/room-1920.webp'
+import room3200 from '../assets/room/room-3200.webp'
+import room3840 from '../assets/room/room-3840.webp'
+import still1920 from '../assets/room/room-still-1920.webp'
+import still3200 from '../assets/room/room-still-3200.webp'
+
+const crops = import.meta.glob<string>('../assets/room/crops/*.webp', { eager: true, query: '?url', import: 'default' })
 
 export interface RoomObjectDef {
   id: ObjectId
@@ -10,7 +22,7 @@ export interface RoomObjectDef {
   spot: { x: number; y: number; depth: number }
 }
 
-const crop = (id: ObjectId) => `/room/crops/${id}.webp`
+const crop = (id: ObjectId) => crops[`../assets/room/crops/${id}.webp`]
 
 // Spots measured on the 3840 x 2143 source photo; depth sampled from the depth map.
 export const roomObjects: Record<ObjectId, RoomObjectDef> = {
@@ -29,18 +41,18 @@ export const ROOM_PHOTO = {
   aspect: 3840 / 2143,
   // the room without the chair; the chair is drawn on top as its own layer
   sources: [
-    { width: 1280, src: '/room/room-1280.webp' },
-    { width: 1920, src: '/room/room-1920.webp' },
-    { width: 3200, src: '/room/room-3200.webp' },
-    { width: 3840, src: '/room/room-3840.webp' },
+    { width: 1280, src: room1280 },
+    { width: 1920, src: room1920 },
+    { width: 3200, src: room3200 },
+    { width: 3840, src: room3840 },
   ],
   // the complete photo, for browsers without WebGL
   flatSources: [
-    { width: 1920, src: '/room/room-still-1920.webp' },
-    { width: 3200, src: '/room/room-still-3200.webp' },
+    { width: 1920, src: still1920 },
+    { width: 3200, src: still3200 },
   ],
-  depth: '/room/depth.png',
-  chair: { src: '/room/chair.webp', rect: { x: 0.348438, y: 0.575362, w: 0.210156, h: 0.424638 }, depth: 0.86 },
+  depth: depthSrc,
+  chair: { src: chairSrc, rect: { x: 0.348438, y: 0.575362, w: 0.210156, h: 0.424638 }, depth: 0.86 },
   /** The laptop's screen, which the camera zooms into. */
   laptopScreen: { x: 0.45677, y: 0.40691, w: 0.09427, h: 0.09893 },
   /** The window glass above the desk: hovering it shows a note about Washington. */
