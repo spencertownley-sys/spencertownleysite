@@ -1,18 +1,54 @@
 /* The game console: an old CRT menu laid over the TV's glass. */
 
-.tv-backdrop {
+/* the head-on close-up the room merges into */
+.tv-closeup {
   position: fixed;
-  z-index: 59;
-  top: var(--bar-h);
-  bottom: var(--foot-h);
-  left: 0;
-  right: 0;
+  inset: 0;
+  z-index: 47;
+  overflow: hidden;
   cursor: zoom-out;
+  will-change: transform, opacity;
+}
+
+.tv-closeup img {
+  position: absolute;
+  max-width: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.tv-back {
+  position: fixed;
+  z-index: 49;
+  top: calc(var(--bar-h) + 10px);
+  left: clamp(12px, 2vw, 24px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  background: rgba(255, 250, 242, 0.85);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(40, 24, 12, 0.2);
+  color: var(--ink);
+  font-family: var(--font-room);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tv-back kbd {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(35, 28, 26, 0.1);
+  font-family: var(--font-mono);
+  font-size: 11px;
 }
 
 .tv-screen {
   position: fixed;
-  z-index: 60;
+  z-index: 48;
   outline: none;
   /* the glass of a 60s set: very rounded, a little bulged */
   border-radius: 11% / 14%;
@@ -69,7 +105,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 22px 26px 16px;
+  padding: 15px 16px 10px;
   text-shadow:
     0 0 6px rgba(140, 200, 255, 0.55),
     1px 0 0 rgba(255, 80, 80, 0.35),
@@ -78,7 +114,7 @@
 
 .crt-title {
   margin: 0;
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1.4;
   color: #ffd35a;
   letter-spacing: 0.02em;
@@ -92,8 +128,8 @@
 }
 
 .crt-sub {
-  margin: 8px 0 14px;
-  font-size: 7px;
+  margin: 6px 0 10px;
+  font-size: 6px;
   color: #8fb4ff;
 }
 
@@ -103,16 +139,16 @@
   padding: 0;
   width: 100%;
   display: grid;
-  gap: 6px;
+  gap: 3px;
 }
 
 .crt-row {
   display: grid;
   grid-template-columns: 12px 1fr auto;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
-  padding: 6px 8px;
+  padding: 5px 6px;
   border: 0;
   border-radius: 2px;
   background: none;
@@ -137,7 +173,7 @@
 }
 
 .crt-tag {
-  font-size: 7px;
+  font-size: 6px;
   color: #8fb4ff;
 }
 
@@ -152,6 +188,7 @@
   align-items: center;
   width: 100%;
   font-size: 6px;
+  line-height: 1.4;
   color: #8fb4ff;
 }
 
@@ -190,8 +227,8 @@
 
 .crt-small {
   margin: 0;
-  max-width: 240px;
-  font-size: 7px;
+  max-width: 210px;
+  font-size: 6px;
   line-height: 1.7;
   color: #cfe0ff;
 }
@@ -270,34 +307,6 @@
   font-size: 11px;
   font-weight: 800;
   cursor: pointer;
-}
-
-/* phones: the TV screen fills the width */
-.tv-compact-bg {
-  position: fixed;
-  inset: 0;
-  z-index: 59;
-  background: radial-gradient(ellipse at 50% 30%, #2a1d14, #0d0906);
-}
-
-.tv-compact-back {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  padding: 8px 16px;
-  border: 0;
-  border-radius: 999px;
-  background: #fffaf1;
-  color: #231c1a;
-  font-family: var(--font-room);
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.tv-screen.is-compact {
-  border-radius: 7% / 9%;
-  border: 10px solid #5a3b24;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
 @media (prefers-reduced-motion: reduce) {

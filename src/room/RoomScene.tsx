@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { sectionById, washington, type ObjectId, type SectionId } from '../content/site'
+import { prefetchCloseups } from '../games/GameConsole'
+import { sectionById, site, washington, type ObjectId, type SectionId } from '../content/site'
 import { ambience } from '../lib/audio'
 import { useReducedMotion } from '../lib/hooks'
 import { supportsWebGL } from '../lib/webgl'
@@ -67,15 +68,20 @@ interface Props {
   onOpen: (id: SectionId) => void
   /** Where the camera has flown in to (the laptop or the game console), if anywhere. */
   zoomTo?: ZoomTarget | null
+  /** Touch screens: labels always show (there is no hover) and a swipe moves the camera. */
+  touch?: boolean
+  /** Phones: switch to the plain list of everything in the room. */
+  onList?: () => void
 }
 
-export function RoomScene({ onOpen, zoomTo = null }: Props) {
+export function RoomScene({ onOpen, zoomTo = null, touch = false, onList }: Props) {
   const spots = useRef<Record<string, HTMLButtonElement | null>>({})
   const windowZone = useRef<HTMLButtonElement>(null)
   const note = useRef<HTMLDivElement>(null)
   const [hint, setHint] = useState(true)
   const [noteOpen, setNoteOpen] = useState(false)
   const hovering = useRef<string | null>(null)
+  const pointer = useRef('mouse')
 
   const onFrame = useCallback<FrameFn>((list, zones) => {
     for (const s of list) {
@@ -97,7 +103,7 @@ export function RoomScene({ onOpen, zoomTo = null }: Props) {
         const vw = el.parentElement?.clientWidth ?? window.innerWidth
         const nw = n.offsetWidth
         const right = z.x + z.w + 18
-        const x = right + nw < vw - 16 ? right : Math.max(16, z.x + z.w - nw - 18)
+        const x = right + nw < vw - 16 ? right : Math.max(16, Math.min(z.x + z.w - nw - 18, vw - nw - 16))
         const y = Math.max(76, z.y + z.h * 0.12)
         n.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`
       }
@@ -148,6 +154,7 @@ export function RoomScene({ onOpen, zoomTo = null }: Props) {
   }, [view])
 
   const enter = (id: string) => {
+    if (id === 'console') prefetchCloseups()
     hovering.current = id
     view.current?.setPaused(true)
     if (id !== 'window') ambience.sfx('hover')
@@ -167,7 +174,7 @@ export function RoomScene({ onOpen, zoomTo = null }: Props) {
   }
 
   return (
-    <div className={`room-scene ${hint ? 'show-labels' : ''} ${zoomTo ? 'is-zoomed' : ''}`}>
+    <div className={`room-scene ${hint || touch ? 'show-labels' : ''} ${zoomTo ? 'is-zoomed' : ''} ${touch ? 'is-touch' : ''}`}>
       <RoomPhoto canvas={canvas} img={img} ready={ready} flat={flat} />
       <div className="room-spots">
         <button
@@ -177,12 +184,21 @@ export function RoomScene({ onOpen, zoomTo = null }: Props) {
           aria-label={`The view out the window. ${washington.title}.`}
           aria-expanded={noteOpen}
           aria-controls="window-note"
-          onPointerDown={(e) => view.current?.beginDrag(e.clientX)}
+          onPointerDown={(e) => {
+            pointer.current = e.pointerType
+            view.current?.beginDrag(e.clientX)
+          }}
           onPointerEnter={(e) => e.pointerType === 'mouse' && showNote()}
           onPointerLeave={(e) => e.pointerType === 'mouse' && hideNote()}
-          onFocus={showNote}
+          // keyboard focus opens it; a tap's focus would open it just before the click closed it again
+          onFocus={(e) => e.currentTarget.matches(':focus-visible') && showNote()}
           onBlur={hideNote}
-          onClick={() => (noteOpen ? hideNote() : showNote())}
+          onClick={(e) => {
+            // a mouse is already hovering it open, so a click keeps it; taps and keys toggle it
+            const toggle = e.detail === 0 || pointer.current !== 'mouse'
+            if (noteOpen && toggle) hideNote()
+            else showNote()
+          }}
         />
         {ids.map((id) => {
           const def = roomObjects[id]
@@ -200,6 +216,7 @@ export function RoomScene({ onOpen, zoomTo = null }: Props) {
               onBlur={() => leave(id)}
               onClick={() => {
                 ambience.sfx('open')
+                if (id === 'console') prefetchCloseups()
                 onOpen(section.id)
               }}
               aria-label={`${section.roomLabel}. ${def.name}.`}
@@ -217,6 +234,19 @@ export function RoomScene({ onOpen, zoomTo = null }: Props) {
           <WindowNote />
         </div>
       </div>
+      {touch && !zoomTo && (
+        <p className={`touch-hint ${hint && ready && !noteOpen ? 'is-on' : ''}`} aria-hidden="true">
+          {site.touchHint}
+        </p>
+      )}
+      {onList && !zoomTo && (
+        <button type="button" className="room-list-btn" onClick={onList}>
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+            <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          List view
+        </button>
+      )}
     </div>
   )
 }

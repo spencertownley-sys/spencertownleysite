@@ -1,28 +1,89 @@
-// The console under the TV: the camera frames the TV and cabinet, the set powers on,
-// and an old-school menu lists the games. Arrow keys (or the mouse) pick a cartridge.
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+// The console under the TV. The Room camera flies to the TV cabinet, then the view
+// merges into a head-on close-up of it (the close-up grows out of the TV's spot in the
+// room), the set powers on, and an old-school menu lists the games.
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import '@fontsource/press-start-2p/latin-400.css'
 import { games, sectionById, type Game } from '../content/site'
 import { ambience } from '../lib/audio'
-import { useReducedMotion } from '../lib/hooks'
-import { useArrived, useScreenBox } from '../room/zoom'
+import { useMediaQuery, useReducedMotion } from '../lib/hooks'
+import { screenBox, useArrived, type Box } from '../room/zoom'
+import tallSmall from '../assets/tv/tv-tall-1080.webp'
+import tallLarge from '../assets/tv/tv-tall-1620.webp'
+import wideSmall from '../assets/tv/tv-wide-2560.webp'
+import wideLarge from '../assets/tv/tv-wide-3840.webp'
 
-/** The menu is laid out on a fixed 320 x 240 screen, then scaled to fit the TV. */
-const LOGICAL_W = 320
-const LOGICAL_H = 240
+/** The menu is laid out on a fixed 256 x 192 screen (4:3, like the old consoles), then scaled to the TV. */
+const LOGICAL_W = 256
+const LOGICAL_H = 192
+
+/**
+ * The head-on close-ups, measured in their full-size pixels: where the TV glass is,
+ * and what should fill the view (TV and cabinet on wide screens, the TV on phones).
+ */
+const CLOSEUPS = {
+  wide: {
+    srcSet: `${wideSmall} 2560w, ${wideLarge} 3840w`,
+    src: wideSmall,
+    w: 3840,
+    h: 2160,
+    screen: { x: 1508, y: 518, w: 608, h: 467 },
+    subject: { x: 1015, y: 455, w: 1792, h: 1165 },
+  },
+  tall: {
+    srcSet: `${tallSmall} 1080w, ${tallLarge} 1620w`,
+    src: tallSmall,
+    w: 2160,
+    h: 3840,
+    screen: { x: 450, y: 990, w: 970, h: 715 },
+    subject: { x: 300, y: 880, w: 1510, h: 1000 },
+  },
+}
+
+/** Warm the close-ups up before they are needed (the Room calls this on hovering the console). */
+export function prefetchCloseups() {
+  for (const c of Object.values(CLOSEUPS)) {
+    const img = new Image()
+    img.srcset = c.srcSet
+    img.sizes = '100vw'
+    img.src = c.src
+  }
+}
+
+/** Where the close-up image sits (cover, zoomed so its subject fills the space between the bars) and where its TV glass lands. */
+function closeupLayout(vw: number, vh: number, compact: boolean) {
+  const c = vw / vh < 0.9 ? CLOSEUPS.tall : CLOSEUPS.wide
+  const top = compact ? 64 : 76
+  const bottom = compact ? 76 : 68
+  const side = 12
+  const cover = Math.max(vw / c.w, vh / c.h)
+  const fit = Math.min((vw - side * 2) / c.subject.w, (vh - top - bottom) / c.subject.h)
+  const s = Math.max(cover, fit)
+  const iw = c.w * s
+  const ih = c.h * s
+  let x = vw / 2 - (c.subject.x + c.subject.w / 2) * s
+  let y = top + (vh - top - bottom) / 2 - (c.subject.y + c.subject.h / 2) * s
+  x = Math.min(0, Math.max(vw - iw, x))
+  y = Math.min(0, Math.max(vh - ih, y))
+  const screen: Box = { x: x + c.screen.x * s, y: y + c.screen.y * s, w: c.screen.w * s, h: c.screen.h * s }
+  return { c, img: { x, y, w: iw, h: ih }, screen }
+}
 
 interface Props {
   compact: boolean
+  /** True when the Room camera is flying in (the close-up merges out of the room's TV). */
+  camera: boolean
   onClose: () => void
 }
 
 type Screen = { kind: 'menu' } | { kind: 'soon'; game: Game; n: number } | { kind: 'play'; game: Game }
 
-export function GameConsole({ compact, onClose }: Props) {
+export function GameConsole({ compact, camera, onClose }: Props) {
   const reduced = useReducedMotion()
-  const box = useScreenBox(compact ? null : 'console')
-  const arrived = useArrived('console', compact)
+  const touch = useMediaQuery('(hover: none)') || compact
+  const arrived = useArrived('console', !camera)
+  const [imgReady, setImgReady] = useState(false)
+  const [merged, setMerged] = useState(false)
   const root = useRef<HTMLDivElement>(null)
   const rows = useRef<(HTMLButtonElement | null)[]>([])
   const returnFocus = useRef<HTMLElement | null>(null)
@@ -47,13 +108,13 @@ export function GameConsole({ compact, onClose }: Props) {
   }, [])
 
   useEffect(() => {
-    if (arrived) ambience.sfx('power')
-  }, [arrived])
+    if (merged) ambience.sfx('power')
+  }, [merged])
 
   // keep keyboard focus on the highlighted cartridge
   useEffect(() => {
-    if (arrived && screen.kind === 'menu') rows.current[index]?.focus({ preventScroll: true })
-  }, [arrived, screen.kind, index])
+    if (merged && screen.kind === 'menu') rows.current[index]?.focus({ preventScroll: true })
+  }, [merged, screen.kind, index])
 
   const leave = () => {
     ambience.sfx('close')
@@ -118,32 +179,68 @@ export function GameConsole({ compact, onClose }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  // the logical screen, scaled into the TV glass (or the phone screen)
-  const frame = box ?? fitCompact(view.w, view.h)
+  const layout = closeupLayout(view.w, view.h, compact)
+  const frame = layout.screen
   const scale = Math.min(frame.w / LOGICAL_W, frame.h / LOGICAL_H)
+
+  // The merge: the close-up starts laid over the TV in the room (same size, same place)
+  // and grows to fill the view while it fades in. Leaving plays it backwards.
+  const from = (() => {
+    if (!camera || reduced) return { opacity: 0 }
+    const room = screenBox('console', view.w, view.h)
+    const k = room.w / frame.w
+    return {
+      opacity: 0,
+      scale: k,
+      x: room.x + room.w / 2 - (frame.x + frame.w / 2) * k,
+      y: room.y + room.h / 2 - (frame.y + frame.h / 2) * k,
+    }
+  })()
+  const show = arrived && imgReady
+
+  const clickAway = (e: MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'IMG') leave()
+  }
 
   return (
     <>
-      {box && (
-        <motion.div
-          className="tv-backdrop"
-          aria-hidden="true"
-          onClick={leave}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+      <motion.div
+        className={`tv-closeup ${show ? 'is-shown' : ''}`}
+        style={{ transformOrigin: '0 0' }}
+        initial={from}
+        animate={show ? { opacity: 1, scale: 1, x: 0, y: 0 } : from}
+        exit={{ ...from, transition: { duration: reduced ? 0.15 : 0.5, ease: [0.4, 0, 0.6, 1] } }}
+        transition={{ duration: reduced ? 0.25 : 0.8, ease: [0.45, 0, 0.2, 1] }}
+        onAnimationComplete={() => {
+          if (show) setMerged(true)
+        }}
+        onClick={clickAway}
+        aria-hidden="true"
+      >
+        <img
+          src={layout.c.src}
+          srcSet={layout.c.srcSet}
+          sizes={`${Math.round(layout.img.w)}px`}
+          alt=""
+          draggable={false}
+          onLoad={() => setImgReady(true)}
+          style={{ left: layout.img.x, top: layout.img.y, width: layout.img.w, height: layout.img.h }}
         />
-      )}
-      {compact && (
-        <motion.div className="tv-compact-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <button type="button" className="tv-compact-back" onClick={leave}>
-            Back
-          </button>
-        </motion.div>
-      )}
+      </motion.div>
+      <motion.button
+        type="button"
+        className="tv-back"
+        onClick={leave}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: merged ? 1 : 0 }}
+        exit={{ opacity: 0 }}
+      >
+        <span aria-hidden="true">←</span> Back to the room
+        {!compact && <kbd>Esc</kbd>}
+      </motion.button>
       <motion.div
         ref={root}
-        className={`tv-screen ${compact ? 'is-compact' : 'is-framed'}`}
+        className="tv-screen"
         style={{ left: frame.x, top: frame.y, width: frame.w, height: frame.h }}
         role="dialog"
         aria-modal="true"
@@ -151,14 +248,14 @@ export function GameConsole({ compact, onClose }: Props) {
         tabIndex={-1}
         onKeyDown={onKeyDown}
         initial={{ opacity: 0 }}
-        animate={{ opacity: arrived ? 1 : 0, transition: { duration: 0.12 } }}
-        exit={{ opacity: 0, transition: { duration: reduced ? 0.1 : 0.25 } }}
+        animate={{ opacity: merged ? 1 : 0, transition: { duration: 0.12 } }}
+        exit={{ opacity: 0, transition: { duration: reduced ? 0.1 : 0.2 } }}
       >
         {/* the picture "powers on": a bright line opens up into the full screen */}
         <motion.div
           className="crt"
           initial={reduced ? false : { scaleY: 0.012, scaleX: 0.7, filter: 'brightness(3)' }}
-          animate={arrived ? { scaleY: 1, scaleX: 1, filter: 'brightness(1)' } : undefined}
+          animate={merged ? { scaleY: 1, scaleX: 1, filter: 'brightness(1)' } : undefined}
           transition={{ duration: 0.42, ease: [0.2, 0.9, 0.3, 1], delay: 0.05 }}
         >
           {screen.kind === 'play' ? (
@@ -204,11 +301,15 @@ export function GameConsole({ compact, onClose }: Props) {
                       ))}
                     </ul>
                     <div className="crt-foot">
-                      <span>
-                        <kbd>↑↓</kbd> PICK <kbd>ENTER</kbd> PLAY
-                      </span>
+                      {touch ? (
+                        <span>TAP A CARTRIDGE</span>
+                      ) : (
+                        <span>
+                          <kbd>↑↓</kbd> PICK <kbd>ENTER</kbd> PLAY
+                        </span>
+                      )}
                       <button type="button" className="crt-exit" onClick={leave} tabIndex={-1}>
-                        ESC EXIT
+                        {touch ? 'EXIT' : 'ESC EXIT'}
                       </button>
                     </div>
                   </motion.div>
@@ -221,7 +322,7 @@ export function GameConsole({ compact, onClose }: Props) {
                     <p className="crt-msg">COMING SOON</p>
                     <p className="crt-small">{screen.game.blurb ?? games.comingSoon}</p>
                     <button type="button" className="crt-exit crt-blink" onClick={() => setScreen({ kind: 'menu' })}>
-                      PRESS ENTER
+                      {touch ? 'TAP TO GO BACK' : 'PRESS ENTER'}
                     </button>
                   </motion.div>
                 )}
@@ -250,18 +351,4 @@ function GameFrame({ game, onExit }: { game: Game; onExit: () => void }) {
       </div>
     </div>
   )
-}
-
-/** On phones there is no camera move: the TV screen fills the width, 4:3. */
-function fitCompact(w: number, h: number) {
-  const top = 64
-  const aw = w - 24
-  const ah = h - top - 24
-  let fw = aw
-  let fh = (fw * 3) / 4
-  if (fh > ah) {
-    fh = ah
-    fw = (fh * 4) / 3
-  }
-  return { x: (w - fw) / 2, y: top + (ah - fh) / 2, w: fw, h: fh }
 }

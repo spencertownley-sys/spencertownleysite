@@ -197,6 +197,7 @@ export class RoomView {
       o.canvas.addEventListener('pointerdown', this.onDown)
       window.addEventListener('pointermove', this.onMove)
       window.addEventListener('pointerup', this.onUp)
+      window.addEventListener('pointercancel', this.onUp)
       o.canvas.addEventListener('wheel', this.onWheel, { passive: true })
     }
     document.addEventListener('visibilitychange', this.onVisibility)
@@ -252,6 +253,7 @@ export class RoomView {
     c.removeEventListener('pointerdown', this.onDown)
     window.removeEventListener('pointermove', this.onMove)
     window.removeEventListener('pointerup', this.onUp)
+    window.removeEventListener('pointercancel', this.onUp)
     c.removeEventListener('wheel', this.onWheel)
     document.removeEventListener('visibilitychange', this.onVisibility)
     const gl = this.gl
@@ -607,10 +609,12 @@ export class RoomView {
 
     const cb = this.o.onFrame
     if (cb) {
-      const margin = 40
+      // dots fade out near the edges; narrow phones get a thinner edge so more of them stay tappable
+      const margin = Math.min(40, this.w * 0.05)
+      const fade = Math.min(60, this.w * 0.08)
       const spots: ProjectedSpot[] = this.o.spots.map((s) => {
         const p = this.project(s.x, s.y, s.depth, cam)
-        const inView = clamp(Math.min(p.x - margin, this.w - margin - p.x, p.y - margin, this.h - margin - p.y) / 60, 0, 1)
+        const inView = clamp(Math.min(p.x - margin, this.w - margin - p.x, p.y - margin, this.h - margin - p.y) / fade, 0, 1)
         return { id: s.id, x: p.x, y: p.y, inView: inView * (1 - this.focusVal) }
       })
       const zones: ProjectedZone[] = (this.o.zones ?? []).map((z) => {

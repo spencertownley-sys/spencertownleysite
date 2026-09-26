@@ -10,6 +10,7 @@ export const site = {
   openToWhere: 'Seattle or remote',
   roomHint: 'Every glowing dot opens something. Drag or scroll to move through the room.',
   gridHint: 'Tap anything to open it.',
+  touchHint: 'Swipe to look around. Tap a glowing dot to open it.',
   brainHint: 'Same rooms, rewired as how I think. Hover a node.',
   brainTouchHint: 'Same rooms, rewired as how I think. Tap a node.',
   email: 'hello@spencertownley.com',

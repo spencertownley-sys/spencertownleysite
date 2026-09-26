@@ -35,10 +35,12 @@ const FOCUSABLE = 'a[href], button:not([disabled]), iframe, [tabindex]:not([tabi
 
 interface Props {
   compact: boolean
+  /** True when the Room camera is flying in to the laptop (show the desktop once it lands). */
+  camera: boolean
   onClose: () => void
 }
 
-export function LaptopDesktop({ compact, onClose }: Props) {
+export function LaptopDesktop({ compact, camera, onClose }: Props) {
   const reduced = useReducedMotion()
   const root = useRef<HTMLDivElement>(null)
   const returnFocus = useRef<HTMLElement | null>(null)
@@ -47,7 +49,7 @@ export function LaptopDesktop({ compact, onClose }: Props) {
   const iconRefs = useRef<Record<string, HTMLElement | null>>({})
   const box = useScreenBox(compact ? null : 'laptop')
   // show the desktop once the camera has landed on the screen, so the two line up
-  const arrived = useArrived('laptop', compact)
+  const arrived = useArrived('laptop', !camera)
 
   useLayoutEffect(() => {
     returnFocus.current = document.activeElement as HTMLElement | null

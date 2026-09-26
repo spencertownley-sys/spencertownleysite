@@ -33,6 +33,13 @@ export default function App() {
   const zoomTo: ZoomTarget | null =
     mode !== 'room' ? null : section?.id === 'projects' ? 'laptop' : section?.id === 'games' ? 'console' : null
 
+  // Phones get the real room too; the old grid of cards is one tap away as a list view.
+  const [roomList, setRoomList] = useState(false)
+  const listView = compact && roomList
+  const touch = useMediaQuery('(hover: none)') || compact
+  // Whether the Room camera flies in to the laptop or console (not from the list view).
+  const camera = mode === 'room' && !listView
+
   const open = useCallback((id: SectionId) => navigate(sectionById[id].path), [])
   const close = useCallback(() => closeToScene(), [])
 
@@ -68,11 +75,17 @@ export default function App() {
   }, [])
 
   const scene = (m: Mode) =>
-    m === 'room' ? compact ? <RoomGrid onOpen={open} /> : <RoomScene onOpen={open} zoomTo={zoomTo} /> : (
-        <Suspense fallback={<div className="brain-scene" />}>
-          <BrainScene onOpen={open} panelOpen={!!section} />
-        </Suspense>
+    m === 'room' ? (
+      listView ? (
+        <RoomGrid onOpen={open} onBack={() => setRoomList(false)} />
+      ) : (
+        <RoomScene onOpen={open} zoomTo={zoomTo} touch={touch} onList={compact ? () => setRoomList(true) : undefined} />
       )
+    ) : (
+      <Suspense fallback={<div className="brain-scene" />}>
+        <BrainScene onOpen={open} panelOpen={!!section} />
+      </Suspense>
+    )
 
   return (
     <div className={`app ${compact ? 'is-compact' : ''} ${section ? 'panel-open' : ''}`} data-mode={mode}>
@@ -106,8 +119,8 @@ export default function App() {
       <CursorGlow />
       <PanelHost section={zoomTo ? undefined : section} mode={mode} compact={compact} onClose={close} />
       <AnimatePresence initial={false}>
-        {zoomTo === 'laptop' && <LaptopDesktop key="laptop" compact={compact} onClose={close} />}
-        {zoomTo === 'console' && <GameConsole key="console" compact={compact} onClose={close} />}
+        {zoomTo === 'laptop' && <LaptopDesktop key="laptop" compact={compact} camera={camera} onClose={close} />}
+        {zoomTo === 'console' && <GameConsole key="console" compact={compact} camera={camera} onClose={close} />}
       </AnimatePresence>
     </div>
   )

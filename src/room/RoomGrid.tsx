@@ -4,11 +4,16 @@ import { ambience } from '../lib/audio'
 import { gridOrder, roomObjects } from './objects'
 import { RoomPhoto, useRoomView, WindowNote } from './RoomScene'
 
-/** Mobile Room: the room drifting by up top, then the same objects as a simple grid. */
-export function RoomGrid({ onOpen }: { onOpen: (id: SectionId) => void }) {
+/** Phones' list view: the room drifting by up top, then the same objects as a simple grid. */
+export function RoomGrid({ onOpen, onBack }: { onOpen: (id: SectionId) => void; onBack?: () => void }) {
   const room = useRoomView({ interactive: false })
   return (
     <div className="room-grid-wrap">
+      {onBack && (
+        <button type="button" className="grid-back" onClick={onBack}>
+          <span aria-hidden="true">←</span> Back to the room
+        </button>
+      )}
       <div className="room-hero">
         <RoomPhoto canvas={room.canvas} img={room.img} ready={room.ready} flat={room.flat} />
       </div>

@@ -431,3 +431,85 @@
   background: #fff;
   box-shadow: 0 6px 20px rgba(60, 40, 20, 0.13);
 }
+
+/* ---------- touch screens (phones get the real room too) ---------- */
+
+.room-scene.is-touch .room-canvas {
+  touch-action: none;
+}
+
+.room-scene.is-touch .spot-label {
+  padding: 5px 10px 6px;
+  border-radius: 11px;
+}
+
+.room-scene.is-touch .spot-name {
+  font-size: 12.5px;
+}
+
+.room-scene.is-touch .spot-object {
+  display: none;
+}
+
+.touch-hint {
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--bar-h) + 10px);
+  left: 50%;
+  translate: -50% 0;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(35, 28, 26, 0.78);
+  backdrop-filter: blur(8px);
+  color: #fffaf1;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.touch-hint.is-on {
+  opacity: 1;
+}
+
+.room-list-btn {
+  position: absolute;
+  z-index: 2;
+  right: 12px;
+  bottom: calc(var(--foot-h) + 18px);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  background: rgba(255, 250, 242, 0.85);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 18px rgba(40, 24, 12, 0.2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.grid-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 12px 14px 4px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fffaf1;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
