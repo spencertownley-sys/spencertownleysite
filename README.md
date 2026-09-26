@@ -41,9 +41,12 @@ Common updates:
 
 `railway.json` tells Railway to run `npm run build` and start `npm start`, with a health check on `/healthz`. The server sets long-lived caching for hashed assets, serves precompressed files, adds security headers, and falls back to `index.html` for app routes like `/work`.
 
-1. Create a Railway service from this GitHub repo.
-2. Under the service's **Settings > Networking**, generate a domain, then add `spencertownley.com` as a custom domain.
-3. In Cloudflare DNS, add the CNAME record Railway shows for the custom domain.
-4. Optional: point `www` at the same service; the server redirects `www` to the apex.
+The site runs in the Railway project `spencertownley-site`, service `web`, with `spencertownley.com` and `www.spencertownley.com` attached as custom domains. To finish the domain in Cloudflare DNS:
+
+1. Add the `CNAME` records Railway shows under the service's **Settings > Networking** (one for `@`, one for `www`), proxied (orange cloud).
+2. If Railway also shows a `TXT` verification record, add it exactly as shown. The domain will not verify without it.
+3. Set **SSL/TLS > Overview** to **Full**. Not Full (Strict), which does not work with Railway.
+
+The server redirects `www` to the apex, so no Cloudflare redirect rule is needed.
 
 Email: `hello@spencertownley.com` is on the site; Cloudflare Email Routing still needs a destination address configured.
