@@ -47,8 +47,8 @@ const SECURITY = {
     "font-src 'self'",
     "connect-src 'self'",
     "media-src 'self' blob:",
-    // live previews of the side projects on the laptop desktop
-    'frame-src https://points-pool-production.up.railway.app https://makethat.wtf https://shortlist.spencertownley.workers.dev https://trydownbeat.app',
+    // live previews of the side projects on the laptop desktop, and the games on the TV
+    'frame-src https://points-pool-production.up.railway.app https://makethat.wtf https://shortlist.spencertownley.workers.dev https://trydownbeat.app https://spencertownley-sys.github.io',
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
