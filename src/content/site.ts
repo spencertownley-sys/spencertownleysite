@@ -435,7 +435,13 @@ export const games = {
   items: [
     { id: 'game-1', title: null, blurb: null, url: null },
     { id: 'game-2', title: null, blurb: null, url: null },
-    { id: 'game-3', title: null, blurb: null, url: null },
+    {
+      id: 'game-3',
+      title: 'Smoosh',
+      blurb:
+        'A physics merge game. Drop glowing motes, merge matching ones into bigger and brighter tiers, and bring colour back to a storybook world one land at a time. Built with React, PixiJS, and Rapier.',
+      url: 'https://spencertownley-sys.github.io/Merge_Game1/',
+    },
     { id: 'game-4', title: null, blurb: null, url: null },
   ] as Game[],
   emptySlot: 'EMPTY SLOT',
