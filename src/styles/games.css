@@ -319,6 +319,34 @@
   cursor: pointer;
 }
 
+/* Phones: the game grows out of the TV and fills the screen (GameFrame `big`), above the
+   room's bars, with thumb-sized buttons and room for the notch and home indicator. */
+.crt-game.crt-game-big {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+
+.crt-game-big .crt-game-screen {
+  top: env(safe-area-inset-top);
+  left: env(safe-area-inset-left);
+  right: env(safe-area-inset-right);
+  bottom: calc(56px + env(safe-area-inset-bottom));
+}
+
+.crt-game-big .crt-game-bar {
+  bottom: env(safe-area-inset-bottom);
+  height: 56px;
+  gap: 12px;
+}
+
+.crt-game-big .crt-game-bar button {
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .crt-star,
   .crt-arrow,

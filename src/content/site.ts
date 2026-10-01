@@ -447,7 +447,7 @@ export const games = {
         'A physics merge game. Drop glowing motes, merge matching ones into bigger and brighter tiers, and bring colour back to a storybook world one land at a time. Built with React, PixiJS, and Rapier.',
       url: 'https://spencertownley-sys.github.io/Merge_Game1/',
       // A portrait phone game: its home screen and board need about a phone's height.
-      minViewport: { width: 420, height: 760 },
+      minViewport: { width: 360, height: 760 },
     },
     { id: 'game-4', title: null, blurb: null, url: null },
   ] as Game[],
