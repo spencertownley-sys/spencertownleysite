@@ -426,6 +426,11 @@ export interface Game {
   blurb: string | null
   /** Where the game runs. It plays inside the TV (it must allow being framed; add its origin to frame-src in server.mjs). */
   url: string | null
+  /**
+   * The smallest screen the game lays out well on, in CSS pixels. When the TV glass is smaller,
+   * the game runs at a larger size and is scaled down to fit, so it shrinks instead of cropping.
+   */
+  minViewport?: { width: number; height: number }
 }
 
 /** The console under the TV. Connect a game by giving its slot a title and url. */
@@ -441,6 +446,8 @@ export const games = {
       blurb:
         'A physics merge game. Drop glowing motes, merge matching ones into bigger and brighter tiers, and bring colour back to a storybook world one land at a time. Built with React, PixiJS, and Rapier.',
       url: 'https://spencertownley-sys.github.io/Merge_Game1/',
+      // A portrait phone game: its home screen and board need about a phone's height.
+      minViewport: { width: 420, height: 760 },
     },
     { id: 'game-4', title: null, blurb: null, url: null },
   ] as Game[],
