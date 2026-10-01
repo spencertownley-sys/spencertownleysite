@@ -395,9 +395,19 @@ export function GameConsole({ compact, camera, onClose }: Props) {
 /** A connected game, playing right on the TV. */
 function GameFrame({ game, onExit }: { game: Game; onExit: () => void }) {
   const wrap = useRef<HTMLDivElement>(null)
+  const screenRef = useRef<HTMLDivElement>(null)
+  const fit = useFitScale(screenRef, game.minViewport)
   return (
     <div className="crt-game" ref={wrap}>
-      <iframe src={game.url ?? undefined} title={game.title ?? 'Game'} allow="fullscreen; gamepad; autoplay" sandbox="allow-scripts allow-same-origin allow-pointer-lock" />
+      <div className="crt-game-screen" ref={screenRef}>
+        <iframe
+          src={game.url ?? undefined}
+          title={game.title ?? 'Game'}
+          allow="fullscreen; gamepad; autoplay"
+          sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+          style={fit.scale < 1 ? { width: fit.width, height: fit.height, transform: `scale(${fit.scale})` } : undefined}
+        />
+      </div>
       <div className="crt-game-bar">
         <button type="button" onClick={onExit}>
           Menu
@@ -408,4 +418,29 @@ function GameFrame({ game, onExit }: { game: Game; onExit: () => void }) {
       </div>
     </div>
   )
+}
+
+/**
+ * Fits a game to the glass. A game that needs more room than the glass has runs at a larger,
+ * same-shaped size and is scaled down, so all of it shows. Measures layout size (not the
+ * on-screen box), so the console's zoom transforms do not skew it; full screen re-measures.
+ */
+function useFitScale(ref: { current: HTMLElement | null }, min: Game['minViewport']) {
+  const [fit, setFit] = useState({ scale: 1, width: 0, height: 0 })
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || !min) return
+    const measure = () => {
+      const w = el.clientWidth
+      const h = el.clientHeight
+      if (!w || !h) return
+      const scale = Math.min(1, w / min.width, h / min.height)
+      setFit({ scale, width: w / scale, height: h / scale })
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [ref, min])
+  return fit
 }

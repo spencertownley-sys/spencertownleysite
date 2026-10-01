@@ -277,12 +277,21 @@
   background: #000;
 }
 
-.crt-game iframe {
+.crt-game-screen {
   position: absolute;
   inset: 0 0 26px;
+  overflow: hidden;
+}
+
+/* Scaled from the top left when the game needs more room than the glass (useFitScale). */
+.crt-game iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: calc(100% - 26px);
+  height: 100%;
   border: 0;
+  transform-origin: 0 0;
 }
 
 .crt-game-bar {
