@@ -1,0 +1,365 @@
+/* Brain mode: a rotating holographic brain. Two glow colors only: electric blue and violet. */
+
+.brain-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #04060c;
+  color: var(--blue);
+  font-family: var(--font-mono);
+}
+
+.brain-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.brain-canvas:active {
+  cursor: grabbing;
+}
+
+.brain-fallback {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: min(80vw, 110vh);
+  height: auto;
+}
+
+/* soft vignette over the render, under the labels */
+.brain-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+}
+
+.brain-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.anchor-dot {
+  filter: drop-shadow(0 0 5px currentColor) drop-shadow(0 0 2px #fff);
+}
+
+.anchor-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ring 2.8s ease-out infinite;
+}
+
+.brain-overlay g:nth-child(3n) .anchor-ring {
+  animation-delay: -0.9s;
+}
+
+.brain-overlay g:nth-child(3n + 1) .anchor-ring {
+  animation-delay: -1.8s;
+}
+
+@keyframes ring {
+  0% {
+    transform: scale(0.4);
+    stroke-opacity: 0.9;
+  }
+  75%,
+  100% {
+    transform: scale(2);
+    stroke-opacity: 0;
+  }
+}
+
+.brain-tags {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Visible state is written per frame by BrainScene (transform, opacity). */
+[data-fx='dissolved'] {
+  opacity: 0 !important;
+  transition: none !important;
+}
+
+.brain-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  display: grid;
+  gap: 2px;
+  padding: 5px 10px 6px;
+  border: 1px solid rgba(61, 220, 255, 0.5);
+  border-radius: 4px;
+  background: rgba(4, 8, 18, 0.66);
+  box-shadow: 0 0 18px rgba(61, 220, 255, 0.16);
+  backdrop-filter: blur(3px);
+  color: var(--blue);
+  font-family: var(--font-mono);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  will-change: transform, opacity;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.brain-tag.is-only {
+  color: var(--violet);
+  border-color: rgba(214, 92, 255, 0.55);
+  box-shadow: 0 0 18px rgba(214, 92, 255, 0.18);
+}
+
+.brain-tag .region {
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(61, 220, 255, 0.72);
+}
+
+.brain-tag.is-only .region {
+  color: rgba(214, 92, 255, 0.78);
+}
+
+.brain-tag .name {
+  font-size: 14px;
+  font-weight: 600;
+  text-shadow: 0 0 12px rgba(61, 220, 255, 0.5);
+}
+
+.brain-tag.is-only .name {
+  text-shadow: 0 0 12px rgba(214, 92, 255, 0.5);
+}
+
+.brain-tag:hover,
+.brain-tag:focus-visible {
+  background: rgba(8, 18, 34, 0.85);
+}
+
+.brain-tag:focus-visible {
+  outline: 1px dashed currentColor;
+  outline-offset: 3px;
+}
+
+.brain-hud {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 20px;
+  translate: -50% 0;
+  max-width: min(640px, calc(100vw - 560px));
+  padding: 9px 14px;
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--blue);
+  background: rgba(4, 8, 18, 0.72);
+  border: 1px solid rgba(61, 220, 255, 0.35);
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.hud-prompt,
+.hud-sep {
+  color: var(--violet);
+}
+
+.hud-key {
+  font-weight: 700;
+}
+
+.hud-cta,
+.hud-idle {
+  color: rgba(61, 220, 255, 0.72);
+}
+
+.hud-caret {
+  display: inline-block;
+  width: 0.6em;
+  height: 1em;
+  margin-left: 4px;
+  vertical-align: -2px;
+  background: var(--blue);
+  animation: caret 1.05s steps(2) infinite;
+}
+
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.brain-legend {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--bar-h) + 6px);
+  right: clamp(12px, 2vw, 24px);
+  display: flex;
+  gap: 16px;
+  font-size: 11.5px;
+  color: rgba(61, 220, 255, 0.75);
+  pointer-events: none;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legend-item.is-only {
+  color: rgba(214, 92, 255, 0.85);
+}
+
+.legend-item i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+@media (max-width: 1100px) {
+  .brain-hud {
+    max-width: calc(100vw - 420px);
+  }
+}
+
+/* ---------- stacked list (phones, portrait tablets) ---------- */
+
+.brain-list-wrap {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--bar-h) 18px calc(var(--foot-h) + 32px);
+  background: #04060c;
+  color: var(--blue);
+  font-family: var(--font-mono);
+}
+
+.brain-list-wrap > * {
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.brain-hero {
+  position: relative;
+  margin: 0 -18px;
+  max-width: none;
+  height: min(62vw, 440px);
+}
+
+.brain-hero canvas,
+.brain-hero img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brain-intro {
+  margin-top: 10px;
+  margin-bottom: 18px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(61, 220, 255, 0.8);
+}
+
+.brain-group-title {
+  margin-top: 22px;
+  margin-bottom: 6px;
+  font-family: var(--font-orbit);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.brain-group-title.is-only {
+  color: var(--violet);
+}
+
+.brain-list {
+  list-style: none;
+  padding: 0;
+}
+
+.brain-list li {
+  color: var(--blue);
+}
+
+.brain-list li.is-only {
+  color: var(--violet);
+}
+
+.brain-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 2px;
+  border: 0;
+  border-bottom: 1px solid rgba(61, 220, 255, 0.16);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.item-trace {
+  flex: none;
+  width: 40px;
+  height: 20px;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.item-text {
+  display: grid;
+  gap: 2px;
+}
+
+.brain-item .region {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(61, 220, 255, 0.68);
+}
+
+.is-only .brain-item .region {
+  color: rgba(214, 92, 255, 0.75);
+}
+
+.brain-item .name {
+  font-size: 16.5px;
+  font-weight: 600;
+}
+
+.brain-item .teaser {
+  font-size: 12.5px;
+  color: rgba(61, 220, 255, 0.64);
+}
+
+.is-only .brain-item .teaser {
+  color: rgba(214, 92, 255, 0.66);
+}
