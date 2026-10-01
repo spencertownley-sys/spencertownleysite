@@ -3,6 +3,7 @@
 // fades in, so the whole move reads as one zoom), the set powers on, and an old-school
 // menu lists the games.
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, usePresence } from 'framer-motion'
 import '@fontsource/press-start-2p/latin-400.css'
 import { games, sectionById, type Game } from '../content/site'
@@ -155,8 +156,8 @@ export function GameConsole({ compact, camera, onClose }: Props) {
     }
     if (screen.kind !== 'menu') {
       if (e.key === 'Tab') {
-        // keep focus on the TV
-        const els = Array.from(root.current?.querySelectorAll<HTMLElement>('button, iframe') ?? [])
+        // keep focus on the TV (or on the game, when it has grown out of the TV to fill a phone)
+        const els = Array.from(document.querySelectorAll<HTMLElement>('.tv-screen button, .tv-screen iframe, .crt-game-big button, .crt-game-big iframe'))
         const at = els.indexOf(document.activeElement as HTMLElement)
         e.preventDefault()
         els[(at + (e.shiftKey ? -1 : 1) + els.length) % els.length]?.focus()
@@ -316,7 +317,7 @@ export function GameConsole({ compact, camera, onClose }: Props) {
           transition={{ duration: 0.42, ease: [0.2, 0.9, 0.3, 1], delay: 0.05 }}
         >
           {screen.kind === 'play' ? (
-            <GameFrame game={screen.game} onExit={() => setScreen({ kind: 'menu' })} />
+            <GameFrame game={screen.game} big={compact} glass={frame} reduced={reduced} onExit={() => setScreen({ kind: 'menu' })} />
           ) : (
             <div className="crt-logical" style={{ width: LOGICAL_W, height: LOGICAL_H, transform: `translate(-50%, -50%) scale(${scale})` }}>
               <AnimatePresence mode="wait" initial={false}>
@@ -392,13 +393,18 @@ export function GameConsole({ compact, camera, onClose }: Props) {
   )
 }
 
-/** A connected game, playing right on the TV. */
-function GameFrame({ game, onExit }: { game: Game; onExit: () => void }) {
+/**
+ * A connected game, playing right on the TV. On phones the glass is too small to play on,
+ * so the game grows out of the TV and fills the screen instead (`big`); Menu puts it back.
+ */
+function GameFrame({ game, big, glass, reduced, onExit }: { game: Game; big: boolean; glass: Box; reduced: boolean; onExit: () => void }) {
   const wrap = useRef<HTMLDivElement>(null)
   const screenRef = useRef<HTMLDivElement>(null)
   const fit = useFitScale(screenRef, game.minViewport)
-  return (
-    <div className="crt-game" ref={wrap}>
+  // iPhone Safari cannot put a page element in full screen, so only offer it where it works.
+  const canFullscreen = document.fullscreenEnabled
+  const content = (
+    <>
       <div className="crt-game-screen" ref={screenRef}>
         <iframe
           src={game.url ?? undefined}
@@ -412,11 +418,42 @@ function GameFrame({ game, onExit }: { game: Game; onExit: () => void }) {
         <button type="button" onClick={onExit}>
           Menu
         </button>
-        <button type="button" onClick={() => void wrap.current?.requestFullscreen?.().catch(() => {})}>
-          Full screen
-        </button>
+        {canFullscreen && (
+          <button type="button" onClick={() => void wrap.current?.requestFullscreen?.().catch(() => {})}>
+            Full screen
+          </button>
+        )}
       </div>
-    </div>
+    </>
+  )
+  if (!big) {
+    return (
+      <div className="crt-game" ref={wrap}>
+        {content}
+      </div>
+    )
+  }
+  // Out of the TV's transformed layers (a portal), so it can cover the whole screen. It starts
+  // on the glass and grows to full size, which reads as the picture coming out of the set.
+  // Its own AnimatePresence, because the console's (initial={false} in App, when /games is
+  // opened directly) would otherwise skip the grow.
+  const from = { x: glass.x, y: glass.y, scaleX: glass.w / window.innerWidth, scaleY: glass.h / window.innerHeight }
+  return createPortal(
+    <AnimatePresence>
+      <motion.div
+        ref={wrap}
+        className="crt-game crt-game-big"
+        style={{ originX: 0, originY: 0 }}
+        initial={reduced ? { opacity: 0 } : { ...from, opacity: 0.6 }}
+        animate={{ x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1 }}
+        transition={{ duration: reduced ? 0.15 : 0.34, ease: [0.2, 0.9, 0.3, 1] }}
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        {content}
+      </motion.div>
+    </AnimatePresence>,
+    document.body,
   )
 }
 
