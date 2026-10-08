@@ -431,6 +431,8 @@ export interface Game {
    * the game runs at a larger size and is scaled down to fit, so it shrinks instead of cropping.
    */
   minViewport?: { width: number; height: number }
+  /** The same on touch screens, where a game may add on-screen controls that need room too. Falls back to minViewport. */
+  touchMinViewport?: { width: number; height: number }
 }
 
 /** The console under the TV. Connect a game by giving its slot a title and url. */
@@ -438,8 +440,24 @@ export const games = {
   menuTitle: "SPENCER'S GAMES",
   lead: 'A few small games I have made. Pick a cartridge.',
   items: [
-    { id: 'game-1', title: null, blurb: null, url: null },
-    { id: 'game-2', title: null, blurb: null, url: null },
+    {
+      id: 'game-1',
+      title: 'Jimothy',
+      blurb: "A cozy Mario-style platformer starring Ballard's short-spined raccoon. World 1-1 is built and on its way to this cartridge.",
+      // Not hosted anywhere yet. Give it a url (and allow that origin in server.mjs) to make it playable.
+      url: null,
+    },
+    {
+      id: 'game-2',
+      title: 'More.',
+      blurb:
+        'A 16-bit story game about the paperclip maximizer. You play Pip, a factory AI handed one sentence, and you follow it all the way. Chapter 1 is playable now.',
+      url: 'https://makemorepaperclips.com/play.html',
+      // Its 384 x 288 screen never drops below 1x, with 16 px of padding each side,
+      // and touch screens add a 162 px controller pad under it.
+      minViewport: { width: 416, height: 288 },
+      touchMinViewport: { width: 416, height: 450 },
+    },
     {
       id: 'game-3',
       title: 'Smoosh',
