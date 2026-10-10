@@ -760,13 +760,6 @@
   font-weight: 700;
 }
 
-/* music */
-
-.callout {
-  margin-top: 24px;
-  background: #f1f7f2;
-}
-
 /* countries */
 
 .map {
@@ -1092,8 +1085,7 @@
   box-shadow: 0 4px 16px rgba(11, 143, 184, 0.08);
 }
 
-[data-mode='brain'] .resume-card,
-[data-mode='brain'] .callout {
+[data-mode='brain'] .resume-card {
   background: #ffffff;
 }
 

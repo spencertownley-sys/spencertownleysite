@@ -265,8 +265,8 @@ export const projects: Project[] = [
     host: 'trydownbeat.app',
     description:
       'A scheduling app for bands, built to solve the actual headache of coordinating rehearsals and building a setlist everyone can vote on, or veto.',
-    why: 'Getting my band into the same room at the same time was harder than learning the songs. Now rehearsals and setlists live behind one link.',
-    tags: ['Scheduling', 'Built for my band'],
+    why: 'Getting a whole band into one room at the same time is harder than learning the songs. Downbeat puts rehearsals and the setlist behind one link.',
+    tags: ['Scheduling', 'Setlist voting'],
     status: 'Live',
   },
 ]
@@ -322,9 +322,7 @@ export const youtube = {
 
 export const music = {
   lead:
-    "Party rock covers, played loud enough to get the whole room singing along. The band is my favorite hobby, and easily the loudest one.",
-  downbeat:
-    "The band is also where Downbeat came from. Getting everyone into one room at the same time turned out to be harder than learning the songs, so I built the app that fixes it, setlist votes and vetoes included.",
+    "I play bass. We play party rock covers, loud enough to get the whole room singing along. It's my favorite hobby, and easily the loudest one.",
 }
 
 export const trips = {
@@ -346,12 +344,12 @@ export const howIBuild = {
   steps: [
     { title: 'Start with a real annoyance', note: 'Mine, or one belonging to people I can actually talk to.' },
     { title: 'Build the smallest version that works', note: 'Working beats impressive. AI makes this part fast.' },
-    { title: 'Put it in front of the people with the problem', note: 'The office, the band, the group chat.' },
+    { title: 'Put it in front of the people with the problem', note: 'Coworkers, friends, the group chat.' },
     { title: 'Keep what they use', note: 'Cut the rest without getting sentimental about it.' },
   ],
   evidence: [
     { name: 'Seahawks Points Pool', note: 'Twelve coworkers, one season, one kiosk.' },
-    { name: 'Downbeat', note: 'My own band, my own scheduling headache.' },
+    { name: 'Downbeat', note: 'Rehearsals and setlists, decided in one place.' },
     { name: 'Shortlist', note: 'Picking photos as a group, without the group chat.' },
     { name: 'Make That', note: 'What should I actually make?' },
   ],

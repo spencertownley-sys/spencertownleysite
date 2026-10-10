@@ -221,18 +221,6 @@ function Music() {
           {links.bandYoutube.handle}
         </ExtLink>
       </div>
-      <article className="card callout">
-        <div className="card-head">
-          <h3>Where Downbeat came from</h3>
-        </div>
-        <p>{music.downbeat}</p>
-        <div className="btn-row">
-          <ExtLink href="https://trydownbeat.app" variant="ghost">
-            trydownbeat.app
-          </ExtLink>
-          <InLink to="/projects">All projects</InLink>
-        </div>
-      </article>
     </>
   )
 }
