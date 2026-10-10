@@ -78,10 +78,6 @@ export function TopBar({ mode, onMode, compact }: { mode: Mode; onMode: (m: Mode
         >
           <span className="wordmark-name">{site.name}</span>
           <span className="wordmark-role">{site.role}</span>
-          <span className="wordmark-open" title={`${site.openTo}. ${site.openToWhere}.`}>
-            <i aria-hidden="true" />
-            {site.openTo}
-          </span>
         </a>
         {!compact && <SkipLink className="skip-top" />}
       </div>

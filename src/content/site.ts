@@ -5,9 +5,6 @@ export const site = {
   name: 'Spencer Townley',
   role: 'Product, AI, and process improvement',
   intro: 'I find where work gets stuck, then build the thing that unsticks it.',
-  /** Availability, shown under the name. */
-  openTo: 'Open to product, strategy, and AI roles',
-  openToWhere: 'Seattle or remote',
   roomHint: 'Every glowing dot opens something. Drag or scroll to move through the room.',
   gridHint: 'Tap anything to open it.',
   touchHint: 'Swipe to look around. Tap a glowing dot to open it.',
@@ -298,7 +295,7 @@ export const work = {
 export const countriesCopy = {
   eyebrow: 'I travel. I plan.',
   lead:
-    "Seeing the world is the thing I'd never give up. New cultures, new people, new food, new everything: for me it isn't just fun, it's what makes me feel most alive. Forty-seven countries in, and no signs of stopping.",
+    "Seeing the world is the thing I'd never give up. New cultures, new people, new food... new everything! It's what makes me feel most alive. Forty-seven countries in, and no signs of stopping.",
   hint: 'Hover the map, or pick a region to zoom in.',
   cta: 'Help me plan a trip',
   ctaSubject: 'Help planning a trip',
@@ -332,7 +329,7 @@ export const music = {
 
 export const trips = {
   lead:
-    "Hand me a wish list and I'll turn it into a trip that actually works: the right order, the right pace, and room for the good surprises.",
+    "Hand me a wish list and I'll turn it into a trip that you'll love. The right destinations, the right pace, and room for the good surprises.",
   placeholder:
     'A complete example itinerary is coming soon. Here is the shape each one takes.',
   skeleton: [
