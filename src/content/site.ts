@@ -322,9 +322,9 @@ export const youtube = {
 
 export const music = {
   lead:
-    'Spotted Zebra Music is one of my biggest hobbies and easily the loudest. Rehearsals, setlists, the occasional show.',
+    "Party rock covers, played loud enough to get the whole room singing along. The band is my favorite hobby, and easily the loudest one.",
   downbeat:
-    'It is also where Downbeat came from. Getting a band into the same room at the same time is harder than learning the songs, so I built the app that fixes it, setlist votes and vetoes included.',
+    "The band is also where Downbeat came from. Getting everyone into one room at the same time turned out to be harder than learning the songs, so I built the app that fixes it, setlist votes and vetoes included.",
 }
 
 export const trips = {
