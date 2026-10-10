@@ -18,6 +18,7 @@ const TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.json': 'application/json; charset=utf-8',
+  '.tmj': 'application/json; charset=utf-8',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
@@ -48,12 +49,21 @@ const SECURITY = {
     "connect-src 'self'",
     "media-src 'self' blob:",
     // live previews of the side projects on the laptop desktop, and the games on the TV
-    'frame-src https://points-pool-production.up.railway.app https://makethat.wtf https://shortlist.spencertownley.workers.dev https://trydownbeat.app https://spencertownley-sys.github.io',
+    // ('self' for the games hosted here, under /play/)
+    "frame-src 'self' https://points-pool-production.up.railway.app https://makethat.wtf https://shortlist.spencertownley.workers.dev https://trydownbeat.app https://spencertownley-sys.github.io https://makemorepaperclips.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
   ].join('; '),
+}
+
+// Games hosted on the site itself (public/play/<game>/, built elsewhere and copied in) play
+// on the TV, so the site may frame them. Same rules otherwise.
+const GAME_SECURITY = {
+  ...SECURITY,
+  'X-Frame-Options': 'SAMEORIGIN',
+  'Content-Security-Policy': SECURITY['Content-Security-Policy'].replace("frame-ancestors 'none'", "frame-ancestors 'self'"),
 }
 
 async function fileInfo(path) {
@@ -98,14 +108,22 @@ const server = createServer(async (req, res) => {
       res.writeHead(400)
       return res.end()
     }
-    const file = normalize(join(ROOT, pathname))
+    let file = normalize(join(ROOT, pathname))
     if (file !== ROOT && !file.startsWith(ROOT + sep)) {
       res.writeHead(403)
       return res.end()
     }
 
-    const info = pathname.endsWith('/') ? null : await fileInfo(file)
+    // a hosted game is a folder with its own index.html
+    const game = pathname.startsWith('/play/')
+    if (game && pathname.endsWith('/')) file = join(file, 'index.html')
+    const info = pathname.endsWith('/') && !game ? null : await fileInfo(file)
     if (!info) {
+      if (game && !extname(pathname) && !pathname.endsWith('/') && (await fileInfo(join(file, 'index.html')))) {
+        // its relative asset paths need the trailing slash
+        res.writeHead(301, { Location: `${url.pathname}/${url.search}` })
+        return res.end()
+      }
       if (extname(pathname)) {
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', ...SECURITY })
         return res.end('Not found')
@@ -125,7 +143,7 @@ const server = createServer(async (req, res) => {
       ETag: `"${info.size.toString(36)}-${info.mtimeMs.toString(36)}"`,
       'Last-Modified': info.mtime.toUTCString(),
       Vary: 'Accept-Encoding',
-      ...SECURITY,
+      ...(game ? GAME_SECURITY : SECURITY),
     }
     if (req.headers['if-none-match'] === headers.ETag) {
       res.writeHead(304, headers)

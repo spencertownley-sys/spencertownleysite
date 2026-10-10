@@ -400,7 +400,8 @@ export function GameConsole({ compact, camera, onClose }: Props) {
 function GameFrame({ game, big, glass, reduced, onExit }: { game: Game; big: boolean; glass: Box; reduced: boolean; onExit: () => void }) {
   const wrap = useRef<HTMLDivElement>(null)
   const screenRef = useRef<HTMLDivElement>(null)
-  const fit = useFitScale(screenRef, game.minViewport)
+  const coarse = useMediaQuery('(pointer: coarse)')
+  const fit = useFitScale(screenRef, (coarse && game.touchMinViewport) || game.minViewport)
   // iPhone Safari cannot put a page element in full screen, so only offer it where it works.
   const canFullscreen = document.fullscreenEnabled
   const content = (

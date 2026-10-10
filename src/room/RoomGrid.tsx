@@ -17,10 +17,6 @@ export function RoomGrid({ onOpen, onBack }: { onOpen: (id: SectionId) => void; 
       <div className="room-hero">
         <RoomPhoto canvas={room.canvas} img={room.img} ready={room.ready} flat={room.flat} />
       </div>
-      <p className="intro-open grid-open">
-        <i aria-hidden="true" />
-        {site.openTo}. {site.openToWhere}.
-      </p>
       <p className="grid-intro">
         {site.intro} <span className="grid-hint">{site.gridHint}</span>
       </p>

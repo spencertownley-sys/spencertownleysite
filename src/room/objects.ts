@@ -33,11 +33,10 @@ export const roomObjects: Record<ObjectId, RoomObjectDef> = {
   console: { id: 'console', section: 'games', name: 'Game console', crop: crop('console'), spot: { x: 0.1497, y: 0.679, depth: 0.246 } },
   passport: { id: 'passport', section: 'trips', name: 'Passport and journal', crop: crop('passport'), spot: { x: 0.388, y: 0.5264, depth: 0.41 } },
   laptop: { id: 'laptop', section: 'projects', name: 'Open laptop', crop: crop('laptop'), spot: { x: 0.5039, y: 0.4564, depth: 0.212 } },
-  speaker: { id: 'speaker', section: 'listen', name: 'Amp speaker', crop: crop('speaker'), spot: { x: 0.6036, y: 0.4956, depth: 0.271 } },
-  books: { id: 'books', section: 'writing', name: 'Books on the desk', crop: crop('books'), spot: { x: 0.6635, y: 0.4806, depth: 0.282 }, labelBelow: true },
+  speaker: { id: 'speaker', section: 'music', name: 'Amp speaker', crop: crop('speaker'), spot: { x: 0.6036, y: 0.4956, depth: 0.271 } },
   camera: { id: 'camera', section: 'photography', name: 'Camera', crop: crop('camera'), spot: { x: 0.7831, y: 0.2968, depth: 0.194 } },
   plaque: { id: 'plaque', section: 'youtube', name: 'Play button plaque', crop: crop('plaque'), spot: { x: 0.8518, y: 0.2613, depth: 0.164 } },
-  guitar: { id: 'guitar', section: 'music', name: 'Acoustic guitar', crop: crop('guitar'), spot: { x: 0.8971, y: 0.6206, depth: 0.228 } },
+  plant: { id: 'plant', section: 'links', name: 'Pothos on the wall shelf', crop: crop('plant'), spot: { x: 0.3099, y: 0.2613, depth: 0.245 } },
   backpack: { id: 'backpack', section: 'work', name: 'Travel backpack', crop: crop('backpack'), spot: { x: 0.7383, y: 0.7513, depth: 0.542 } },
 }
 
@@ -63,6 +62,8 @@ export const ROOM_PHOTO = {
   tvUnit: { x: 0, y: 0.4223, w: 0.2383, h: 0.33 },
   /** ...and the TV's glass, where the game menu shows. */
   tvScreen: { x: 0.03776, y: 0.44704, w: 0.08776, h: 0.11619 },
+  /** The pothos on the wall shelf, which the camera flies to before the link garden opens. */
+  plant: { x: 0.2344, y: 0.154, w: 0.1458, h: 0.3266 },
   /** The window glass above the desk: hovering it shows a note about Washington. */
   window: { id: 'window', x: 0.3841, y: 0.0467, w: 0.2643, h: 0.35, depth: 0.1 },
   // 48px blur-up placeholder shown while the photo loads
@@ -71,4 +72,4 @@ export const ROOM_PHOTO = {
 }
 
 /** Mobile grid order: recruiters first. */
-export const gridOrder: ObjectId[] = ['backpack', 'laptop', 'books', 'camera', 'tv', 'console', 'plaque', 'guitar', 'speaker', 'poster', 'passport']
+export const gridOrder: ObjectId[] = ['backpack', 'laptop', 'camera', 'tv', 'console', 'plaque', 'speaker', 'plant', 'poster', 'passport']

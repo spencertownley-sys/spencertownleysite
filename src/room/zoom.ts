@@ -1,10 +1,10 @@
-// Places in the Room the camera can fly into: the laptop (its desktop) and the TV
-// cabinet (the game console). The camera (roomView) and the overlay drawn on top
+// Places in the Room the camera can fly into: the laptop (its desktop), the TV
+// cabinet (the game console), and the pothos on the shelf (all my links). The camera (roomView) and the overlay drawn on top
 // both use these boxes, so the overlay lands exactly on the screen in the photo.
 import { useEffect, useState } from 'react'
 import { ROOM_PHOTO, roomObjects } from './objects'
 
-export type ZoomTarget = 'laptop' | 'console'
+export type ZoomTarget = 'laptop' | 'console' | 'plant'
 
 /** A box on screen, in CSS pixels. */
 export interface Box {
@@ -44,6 +44,8 @@ const targets: Record<ZoomTarget, { frame: Rect; screen: Rect; depth: number; ma
   },
   // the TV and cabinet, filling the space between the top and bottom bars
   console: { frame: ROOM_PHOTO.tvUnit, screen: ROOM_PHOTO.tvScreen, depth: roomObjects.tv.spot.depth, margins: { top: 76, bottom: 68, side: () => 24 } },
+  // the pothos and its shelf; the wall of links fades in over it as the camera lands
+  plant: { frame: ROOM_PHOTO.plant, screen: ROOM_PHOTO.plant, depth: roomObjects.plant.spot.depth, margins: { top: 76, bottom: 68, side: () => 24 } },
 }
 
 /**

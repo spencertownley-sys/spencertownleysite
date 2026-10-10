@@ -16,7 +16,7 @@ export function SkipLink({ compact, className = '' }: { compact?: boolean; class
   return (
     <a className={`skip-link ${className}`} href="/work" onClick={go} aria-label={site.skipLabel}>
       {!compact && <span className="skip-long">{site.skipLabel}</span>}
-      <span className="skip-short">Resume + case studies</span>
+      <span className="skip-short">Career + resume</span>
       <ArrowIcon width={16} height={16} />
     </a>
   )
@@ -78,10 +78,6 @@ export function TopBar({ mode, onMode, compact }: { mode: Mode; onMode: (m: Mode
         >
           <span className="wordmark-name">{site.name}</span>
           <span className="wordmark-role">{site.role}</span>
-          <span className="wordmark-open" title={`${site.openTo}. ${site.openToWhere}.`}>
-            <i aria-hidden="true" />
-            {site.openTo}
-          </span>
         </a>
         {!compact && <SkipLink className="skip-top" />}
       </div>

@@ -222,13 +222,12 @@ export function RoomScene({ onOpen, zoomTo = null, touch = false, onList }: Prop
                 if (id === 'console') prefetchCloseups()
                 onOpen(section.id)
               }}
-              aria-label={`${section.roomLabel}. ${def.name}.`}
+              aria-label={section.roomLabel}
               tabIndex={zoomTo ? -1 : undefined}
             >
               <span className="spot-dot" aria-hidden="true" />
               <span className="spot-label" aria-hidden="true">
                 <span className="spot-name">{section.roomLabel}</span>
-                <span className="spot-object">{def.name}</span>
               </span>
             </button>
           )
