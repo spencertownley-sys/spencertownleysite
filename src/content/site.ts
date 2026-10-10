@@ -321,7 +321,8 @@ export const youtube = {
 }
 
 export const music = {
-  lead: 'I hold down the low end.',
+  lead:
+    "I hold down the low end. We play party rock covers, loud enough to get the whole room singing along. It's my favorite hobby, and easily the loudest one.",
 }
 
 export const trips = {
