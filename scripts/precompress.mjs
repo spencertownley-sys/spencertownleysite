@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { brotliCompressSync, gzipSync, constants } from 'node:zlib'
 
 const root = fileURLToPath(new URL('../dist/', import.meta.url))
-const exts = /\.(html|js|css|svg|json|txt|xml|map)$/
+const exts = /\.(html|js|css|svg|json|tmj|txt|xml|map)$/
 
 async function* walk(dir) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {

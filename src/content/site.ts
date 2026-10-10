@@ -443,9 +443,13 @@ export const games = {
     {
       id: 'game-1',
       title: 'Jimothy',
-      blurb: "A cozy Mario-style platformer starring Ballard's short-spined raccoon. World 1-1 is built and on its way to this cartridge.",
-      // Not hosted anywhere yet. Give it a url (and allow that origin in server.mjs) to make it playable.
-      url: null,
+      blurb:
+        "A cozy Mario-style platformer starring Ballard's short-spined raccoon. World 1-1, Welcome to Ballard, is playable: storm-drain bonus room and the 44 bus included. Built with Phaser and TypeScript.",
+      // Built from the CruiseNewsYouCanUse repo and hosted here, under public/play/jimothy/.
+      url: '/play/jimothy/',
+      // On touch screens it adds a wooden controller on both sides (128 px each at least), laid
+      // out for a landscape phone; desktop scales the 16:9 game to any size by itself.
+      touchMinViewport: { width: 844, height: 390 },
     },
     {
       id: 'game-2',
