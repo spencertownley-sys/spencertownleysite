@@ -321,8 +321,7 @@ export const youtube = {
 }
 
 export const music = {
-  lead:
-    "I play bass. We play party rock covers, loud enough to get the whole room singing along. It's my favorite hobby, and easily the loudest one.",
+  lead: 'I hold down the low end.',
 }
 
 export const trips = {
