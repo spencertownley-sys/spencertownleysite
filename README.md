@@ -5,7 +5,7 @@ Personal portfolio for Spencer Townley. Two toggleable experiences over the same
 ## Stack
 
 - React 19 + Vite + TypeScript
-- **Room**: a photoreal room photo plus a depth map, rendered by a small WebGL shader (`src/room/roomView.ts`). It opens on the whole room, eases in, then drifts slowly with real parallax. The chair is its own cut-out layer so it never smears. Hotspots and the window's hover note are projected with the same math. Clicking the laptop flies the camera into its screen, where a small desktop (`src/laptop/`) has a folder per project. Falls back to a panning image without WebGL.
+- **Room**: a photoreal room photo plus a depth map, rendered by a small WebGL shader (`src/room/roomView.ts`). It opens on the whole room, eases in, then drifts slowly with real parallax. The chair is its own cut-out layer so it never smears. Hotspots and the window's hover note are projected with the same math. Clicking the laptop flies the camera into its screen, where a small desktop (`src/laptop/`) has a folder per project; the console flies to the TV (`src/games/`), and the pothos flies to a wall of vines where every leaf is a link (`src/links/`). Falls back to a panning image without WebGL.
 - **Brain**: a procedural holographic brain in three.js (`src/brain/brainGL.ts`, lazy loaded) that rotates slowly (2 rpm, `RPM` in brainGL.ts). Nodes are pinned to 3D points on it and their labels follow every frame. Falls back to the flat brain artwork and a stacked list without WebGL.
 - Framer Motion for UI motion and the Room/Brain transition
 - One 2D canvas (`src/fx/fx.ts`) for the Brain pixel dissolve, and a very soft glow under the mouse (`src/fx/CursorGlow.tsx`, styled in `base.css`)

@@ -9,6 +9,7 @@ import { COMPACT_QUERY, useMediaQuery, useReducedMotion } from './lib/hooks'
 import { closeToScene, navigate, setMode, useLocation, type Mode } from './lib/router'
 import { GameConsole } from './games/GameConsole'
 import { LaptopDesktop } from './laptop/LaptopDesktop'
+import { LinkGarden } from './links/LinkGarden'
 import { PanelHost } from './panels/PanelHost'
 import { RoomGrid } from './room/RoomGrid'
 import { RoomScene } from './room/RoomScene'
@@ -28,10 +29,20 @@ export default function App() {
   const compact = useMediaQuery(COMPACT_QUERY)
   const reduced = useReducedMotion()
   const section = sectionForPath(path)
-  // In the Room, the projects live on the laptop and the games on the console under the
-  // TV: the camera flies in to them instead of opening a panel.
+  // In the Room, the projects live on the laptop, the games on the console under the TV,
+  // and all the links on the pothos: the camera flies in to them instead of opening a panel.
   const zoomTo: ZoomTarget | null =
-    mode !== 'room' ? null : section?.id === 'projects' ? 'laptop' : section?.id === 'games' ? 'console' : null
+    mode !== 'room'
+      ? null
+      : section?.id === 'projects'
+        ? 'laptop'
+        : section?.id === 'games'
+          ? 'console'
+          : section?.id === 'links'
+            ? 'plant'
+            : null
+  // All my links is a page of its own in both modes, never a panel.
+  const garden = section?.id === 'links'
 
   // Phones get the real room too; the old grid of cards is one tap away as a list view.
   const [roomList, setRoomList] = useState(false)
@@ -117,10 +128,11 @@ export default function App() {
       <BottomBar compact={compact} mode={mode} />
       <FxCanvas mode={mode} />
       <CursorGlow />
-      <PanelHost section={zoomTo ? undefined : section} mode={mode} compact={compact} onClose={close} />
+      <PanelHost section={zoomTo || garden ? undefined : section} mode={mode} compact={compact} onClose={close} />
       <AnimatePresence initial={false}>
         {zoomTo === 'laptop' && <LaptopDesktop key="laptop" compact={compact} camera={camera} onClose={close} />}
         {zoomTo === 'console' && <GameConsole key="console" compact={compact} camera={camera} onClose={close} />}
+        {garden && <LinkGarden key="links" compact={compact} camera={camera} mode={mode} onClose={close} />}
       </AnimatePresence>
     </div>
   )

@@ -89,7 +89,8 @@ function Panel({
   onClose: () => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const Content = sectionContent[section.id]
+  // All my links is a page of its own (LinkGarden), never a panel.
+  const Content = section.id === 'links' ? null : sectionContent[section.id]
   const obj = section.object ? roomObjects[section.object] : null
   const titleId = `panel-title-${section.id}`
 
@@ -112,7 +113,8 @@ function Panel({
     }
   }
 
-  const eyebrow = mode === 'brain' ? section.brain.region : obj ? obj.name : 'Brain only'
+  // The Brain names the region; in the Room the object speaks for itself.
+  const eyebrow = mode === 'brain' ? section.brain.region : obj ? null : 'Brain only'
 
   return (
     <motion.div
@@ -137,7 +139,7 @@ function Panel({
           <span className={`panel-glyph ${section.brain.only ? 'is-only' : ''}`} aria-hidden="true" />
         )}
         <div className="panel-titles">
-          <p className="panel-eyebrow">{eyebrow}</p>
+          {eyebrow && <p className="panel-eyebrow">{eyebrow}</p>}
           <h2 id={titleId}>{section.title}</h2>
           <p className="panel-sub">{section.subtitle}</p>
         </div>
@@ -154,7 +156,7 @@ function Panel({
         </button>
       </header>
       <div className="panel-body">
-        <Content />
+        {Content && <Content />}
       </div>
     </motion.div>
   )

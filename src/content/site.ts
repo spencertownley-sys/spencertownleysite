@@ -5,7 +5,7 @@ export const site = {
   name: 'Spencer Townley',
   role: 'Product, AI, and process improvement',
   intro: 'I find where work gets stuck, then build the thing that unsticks it.',
-  /** Availability, shown under the name and at the top of the career panel. */
+  /** Availability, shown under the name. */
   openTo: 'Open to product, strategy, and AI roles',
   openToWhere: 'Seattle or remote',
   roomHint: 'Every glowing dot opens something. Drag or scroll to move through the room.',
@@ -15,7 +15,7 @@ export const site = {
   brainTouchHint: 'Same rooms, rewired as how I think. Tap a node.',
   email: 'hello@spencertownley.com',
   github: 'https://github.com/spencertownley-sys',
-  skipLabel: 'Skip to resume and case studies',
+  skipLabel: 'Skip to career and resume',
 }
 
 export const links = {
@@ -42,7 +42,6 @@ export type SectionId =
   | 'video'
   | 'youtube'
   | 'music'
-  | 'listen'
   | 'countries'
   | 'trips'
   | 'how-i-build'
@@ -50,7 +49,7 @@ export type SectionId =
   | 'currently'
   | 'travel-and-planning'
   | 'games'
-  | 'writing'
+  | 'links'
 
 export type ObjectId =
   | 'tv'
@@ -60,10 +59,9 @@ export type ObjectId =
   | 'backpack'
   | 'poster'
   | 'passport'
-  | 'guitar'
   | 'speaker'
   | 'console'
-  | 'books'
+  | 'plant'
 
 export interface Section {
   id: SectionId
@@ -93,7 +91,7 @@ export const sections: Section[] = [
     subtitle: 'Product, strategy, AI, and process improvement',
     object: 'backpack',
     roomLabel: 'Career + resume',
-    brain: { region: 'Prefrontal cortex', label: 'Experience', teaser: 'career, resume, case studies' },
+    brain: { region: 'Prefrontal cortex', label: 'Experience', teaser: 'career and resume' },
   },
   {
     id: 'projects',
@@ -134,21 +132,11 @@ export const sections: Section[] = [
   {
     id: 'music',
     path: '/music',
-    title: 'Spotted Zebra Music',
-    subtitle: 'The band, and the loudest hobby I have',
-    object: 'guitar',
-    roomLabel: 'Music',
-    brain: { region: 'Auditory cortex', label: 'Music', teaser: 'Spotted Zebra Music' },
-  },
-  {
-    id: 'listen',
-    path: '/listen',
-    title: 'Spotted Zebra, on air',
-    subtitle: 'Straight to the band',
+    title: 'Now playing: Spotted Zebra',
+    subtitle: "Seattle's premier party rock cover band",
     object: 'speaker',
-    roomLabel: 'Band links',
-    compact: true,
-    brain: { region: 'Brainstem relay', label: 'Band links', teaser: 'Instagram and YouTube' },
+    roomLabel: 'Music',
+    brain: { region: 'Auditory cortex', label: 'Music', teaser: 'Spotted Zebra, the band' },
   },
   {
     id: 'countries',
@@ -178,13 +166,13 @@ export const sections: Section[] = [
     brain: { region: 'Cerebellum', label: 'Games', teaser: 'pick a cartridge' },
   },
   {
-    id: 'writing',
-    path: '/writing',
-    title: 'Writing',
-    subtitle: 'Samples now, books on the way',
-    object: 'books',
-    roomLabel: 'Writing',
-    brain: { region: 'Angular gyrus', label: 'Writing', teaser: 'samples and books in progress' },
+    id: 'links',
+    path: '/links',
+    title: "Everything I've planted",
+    subtitle: 'Every project and profile, one leaf each',
+    object: 'plant',
+    roomLabel: 'All my links',
+    brain: { region: 'Dendrites', label: 'All links', teaser: 'every project, one leaf each' },
   },
   {
     id: 'how-i-build',
@@ -287,46 +275,19 @@ export const projects: Project[] = [
 ]
 
 export const projectsCopy = {
-  lead:
-    'Things I have built on my own time, each one because a real problem kept bugging me. AI does a lot of the heavy lifting; the problems are all real, and so are the people using them.',
+  lead: "Tools and projects I've built, each one because a real problem kept bugging me.",
   howLink: 'The pattern behind all four',
-}
-
-export interface CaseStudy {
-  id: string
-  title: string | null
-  org: string | null
-  /** What was stuck. */
-  problem: string | null
-  /** What I changed. */
-  change: string | null
-  /** What it moved, ideally with a number. */
-  result: string | null
-  url: string | null
 }
 
 export const work = {
   eyebrow: 'For recruiters and hiring managers',
   lead:
-    'I work across product management, strategy, AI, and process improvement. The short version: I find where work gets stuck, figure out why, and build the thing that fixes it.',
+    'I work across product management, strategy, AI, and process improvement. I find where work gets stuck, figure out why, and build the thing that fixes it.',
   focus: ['Product management', 'Strategy', 'Applied AI', 'Process improvement'],
   resume: {
     // Set `url` to the PDF path (for example '/spencer-townley-resume.pdf') once it exists.
     url: null as string | null,
     placeholder: 'The PDF is on its way. Until then, email me and I will send the current version the same day.',
-  },
-  caseStudies: {
-    placeholder:
-      'More case studies, drawn from my work at Princess, are on the way. Each one will cover the problem, what I changed, and what it moved.',
-    /**
-     * One slot per case study. Fill in the fields (and `url` for a full write-up or PDF)
-     * and the slot turns into a real card, in the career panel and on the laptop.
-     */
-    items: [
-      { id: 'case-1', title: null, org: 'Princess', problem: null, change: null, result: null, url: null },
-      { id: 'case-2', title: null, org: 'Princess', problem: null, change: null, result: null, url: null },
-      { id: 'case-3', title: null, org: null, problem: null, change: null, result: null, url: null },
-    ] as CaseStudy[],
   },
   story: {
     placeholder:
@@ -337,15 +298,14 @@ export const work = {
 export const countriesCopy = {
   eyebrow: 'I travel. I plan.',
   lead:
-    "Forty-seven countries in, I know how to turn a wish list into a trip that actually works: the right order, the right pace, and room for the good surprises. See where I've been, and let me help you get where you're going.",
+    "Seeing the world is the thing I'd never give up. New cultures, new people, new food, new everything: for me it isn't just fun, it's what makes me feel most alive. Forty-seven countries in, and no signs of stopping.",
   hint: 'Hover the map, or pick a region to zoom in.',
   cta: 'Help me plan a trip',
   ctaSubject: 'Help planning a trip',
 }
 
 export const photography = {
-  lead:
-    'I shoot as Townley Photography: mostly people, plus whatever the light is doing wherever I happen to be.',
+  lead: "I'll let the photos speak for themselves.",
   portraits: [
     { src: '/photos/tile-portrait.jpg', alt: 'Family portrait in warm evening light, parents holding their baby', w: 900, h: 698, caption: 'Family session' },
     { src: '/photos/gallery-portrait-1.jpg', alt: 'A one year old mid cake smash, frosting on their face', w: 667, h: 1000, caption: 'First birthday cake smash' },
@@ -356,13 +316,11 @@ export const photography = {
 }
 
 export const video = {
-  lead:
-    'Video gets its own shelf. Same eye as the stills, just with a timeline. A reel is being cut; until then, the full video portfolio lives on Townley Photography.',
+  lead: "If you like my photos, you'll love my videos. A reel is being cut together now, so stay tuned.",
 }
 
 export const youtube = {
-  lead:
-    'The channel. Videos go up when there is something worth showing, which is a higher bar than it sounds.',
+  lead: "Videos go up when there's something worth showing, which is a higher bar than it sounds.",
 }
 
 export const music = {
@@ -374,7 +332,7 @@ export const music = {
 
 export const trips = {
   lead:
-    'I plan trips the way I plan projects: figure out what actually matters, sequence it, and leave room for the good surprises.',
+    "Hand me a wish list and I'll turn it into a trip that actually works: the right order, the right pace, and room for the good surprises.",
   placeholder:
     'A complete example itinerary is coming soon. Here is the shape each one takes.',
   skeleton: [
@@ -477,35 +435,6 @@ export const games = {
   comingSoon: 'This cartridge is still being soldered together. Check back soon.',
 }
 
-export interface WritingPiece {
-  id: string
-  title: string | null
-  /** Where it was published, or what it is. */
-  venue: string | null
-  blurb: string | null
-  url: string | null
-}
-
-export interface Book {
-  id: string
-  title: string | null
-  status: string
-  blurb: string | null
-  url: string | null
-}
-
-/** The books standing on the desk. Fill a slot in and it turns into a real entry. */
-export const writing = {
-  lead: 'Writing is how I think things through. Samples land here as they are published, and so will the books.',
-  samples: [
-    { id: 'sample-1', title: null, venue: null, blurb: null, url: null },
-    { id: 'sample-2', title: null, venue: null, blurb: null, url: null },
-    { id: 'sample-3', title: null, venue: null, blurb: null, url: null },
-  ] as WritingPiece[],
-  books: [{ id: 'book-1', title: null, status: 'In progress', blurb: null, url: null }] as Book[],
-}
-
-/** Shown when hovering the window in the Room. */
 export const washington = {
   eyebrow: 'Out the window',
   title: 'Home base: Washington State',
@@ -519,13 +448,62 @@ export const laptop = {
   hint: 'Click a folder to look inside. Press Esc to step back into the room.',
   touchHint: 'Tap a folder to look inside. Tap Back to return to the room.',
   extras: {
-    cases: { name: 'Case studies' },
     howIBuild: { name: 'How I build.txt' },
     resume: { name: 'Resume.pdf' },
     linkedin: { name: 'LinkedIn' },
     github: { name: 'GitHub' },
     mail: { name: 'Say hello' },
   },
+}
+
+/* ------------------------------------------------------------------ */
+/* All my links: the pothos opens a wall of vines, one leaf per link.  */
+/* Leaf positions on the pictures live in src/links/leaves.ts.         */
+/* ------------------------------------------------------------------ */
+
+export type LeafGroup = 'built' | 'games' | 'creative' | 'band' | 'me'
+
+export interface Leaf {
+  id: string
+  name: string
+  /** A short second line: what it is, or the handle. */
+  sub: string
+  href: string
+  group: LeafGroup
+}
+
+const projectUrl = (id: string) => projects.find((p) => p.id === id)?.url ?? '/projects'
+const gameUrl = (id: string) => games.items.find((g) => g.id === id)?.url ?? '/games'
+
+export const linkGarden = {
+  hint: 'Every leaf is a link.',
+  touchHint: 'Every leaf is a link. Tap one.',
+  groups: {
+    built: 'Things I built',
+    games: 'Games',
+    creative: 'Photo and video',
+    band: 'The band',
+    me: 'Find me',
+  } as Record<LeafGroup, string>,
+  leaves: [
+    { id: 'points-pool', name: 'Seahawks Points Pool', sub: '8-bit kiosk app', href: projectUrl('points-pool'), group: 'built' },
+    { id: 'make-that', name: 'Make That', sub: 'What to build with AI', href: projectUrl('make-that'), group: 'built' },
+    { id: 'shortlist', name: 'Shortlist', sub: 'Group photo picker', href: projectUrl('shortlist'), group: 'built' },
+    { id: 'downbeat', name: 'Downbeat', sub: 'Band scheduling app', href: projectUrl('downbeat'), group: 'built' },
+    { id: 'jimothy', name: 'Jimothy', sub: 'Platformer', href: gameUrl('game-1'), group: 'games' },
+    { id: 'more', name: 'More.', sub: 'Story game', href: gameUrl('game-2'), group: 'games' },
+    { id: 'smoosh', name: 'Smoosh', sub: 'Merge game', href: gameUrl('game-3'), group: 'games' },
+    { id: 'photo-site', name: 'Townley Photography', sub: 'Photo portfolio', href: links.photoSite.url, group: 'creative' },
+    { id: 'video-site', name: 'Videography', sub: 'Video portfolio', href: links.videoSite.url, group: 'creative' },
+    { id: 'photo-ig', name: 'Photo Instagram', sub: links.photoInstagram.handle, href: links.photoInstagram.url, group: 'creative' },
+    { id: 'youtube', name: 'YouTube', sub: links.youtube.handle, href: links.youtube.url, group: 'creative' },
+    { id: 'band-ig', name: 'Band Instagram', sub: links.bandInstagram.handle, href: links.bandInstagram.url, group: 'band' },
+    { id: 'band-yt', name: 'Band YouTube', sub: links.bandYoutube.handle, href: links.bandYoutube.url, group: 'band' },
+    { id: 'linkedin', name: 'LinkedIn', sub: links.linkedin.handle, href: links.linkedin.url, group: 'me' },
+    { id: 'github', name: 'GitHub', sub: links.github.handle, href: links.github.url, group: 'me' },
+    { id: 'travel-ig', name: 'Travel Instagram', sub: links.travelInstagram.handle, href: links.travelInstagram.url, group: 'me' },
+    { id: 'email', name: 'Email', sub: site.email, href: `mailto:${site.email}`, group: 'me' },
+  ] as Leaf[],
 }
 
 export const audio = {

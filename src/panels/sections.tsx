@@ -14,10 +14,8 @@ import {
   trips,
   video,
   work,
-  writing,
   games,
   youtube,
-  type CaseStudy,
   type SectionId,
 } from '../content/site'
 import { countries, regions } from '../content/countries'
@@ -30,10 +28,6 @@ function Work() {
   return (
     <>
       <p className="eyebrow-line">{work.eyebrow}</p>
-      <p className="open-to">
-        <i aria-hidden="true" />
-        {site.openTo}. {site.openToWhere}.
-      </p>
       <p className="lead">{work.lead}</p>
       <ul className="chips" aria-label="Focus areas">
         {work.focus.map((f) => (
@@ -75,15 +69,6 @@ function Work() {
         </article>
       </div>
 
-      <Section title="Case studies">
-        <p className="section-note">{work.caseStudies.placeholder}</p>
-        <div className="case-list">
-          {work.caseStudies.items.map((c, i) => (
-            <CaseStudyCard key={c.id} c={c} n={i + 1} />
-          ))}
-        </div>
-      </Section>
-
       <Section title="Proof points, shipped" aside={<InLink to="/projects">All projects</InLink>}>
         <ul className="proof-list">
           {projects.map((p) => (
@@ -112,41 +97,6 @@ function Work() {
         </ExtLink>
       </div>
     </>
-  )
-}
-
-/** A case study card; empty slots show the shape each one will take. */
-function CaseStudyCard({ c, n }: { c: CaseStudy; n: number }) {
-  const ready = !!c.title
-  const steps: [string, string | null, string][] = [
-    ['Problem', c.problem, 'What was stuck'],
-    ['What I changed', c.change, 'The fix, and how it got adopted'],
-    ['Result', c.result, 'What it moved, in numbers'],
-  ]
-  return (
-    <article className={`card case-card ${ready ? '' : 'is-slot'}`}>
-      <div className="card-head">
-        <span className="case-num" aria-hidden="true">
-          {String(n).padStart(2, '0')}
-        </span>
-        <h3>{c.title ?? 'Case study in progress'}</h3>
-        {!ready && <Soon />}
-      </div>
-      {c.org && <p className="case-org">{c.org}</p>}
-      <dl className="case-steps">
-        {steps.map(([label, text, hint]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd className={text ? '' : 'is-hint'}>{text ?? hint}</dd>
-          </div>
-        ))}
-      </dl>
-      {c.url && (
-        <ExtLink href={c.url} variant="ghost">
-          Read the case study
-        </ExtLink>
-      )}
-    </article>
   )
 }
 
@@ -284,23 +234,6 @@ function Music() {
         </div>
       </article>
     </>
-  )
-}
-
-function Listen() {
-  return (
-    <div className="listen">
-      <p>Spotted Zebra Music, straight from the source.</p>
-      <div className="listen-links">
-        <ExtLink href={links.bandInstagram.url} icon={<InstagramIcon width={18} height={18} />}>
-          Instagram
-        </ExtLink>
-        <ExtLink href={links.bandYoutube.url} icon={<YoutubeIcon width={18} height={18} />}>
-          YouTube
-        </ExtLink>
-      </div>
-      <InLink to="/music">More about the band</InLink>
-    </div>
   )
 }
 
@@ -458,63 +391,14 @@ function Games() {
   )
 }
 
-function Writing() {
-  return (
-    <>
-      <p className="lead">{writing.lead}</p>
-      <Section title="Writing samples">
-        <div className="case-list">
-          {writing.samples.map((w, i) => (
-            <article key={w.id} className={`card case-card ${w.title ? '' : 'is-slot'}`}>
-              <div className="card-head">
-                <span className="case-num" aria-hidden="true">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <h3>{w.title ?? 'Writing sample in progress'}</h3>
-                {!w.url && <Soon />}
-              </div>
-              {w.venue && <p className="case-org">{w.venue}</p>}
-              <p className={w.blurb ? '' : 'slot-hint'}>{w.blurb ?? 'An essay or article, with a link to read it.'}</p>
-              {w.url && (
-                <ExtLink href={w.url} variant="ghost">
-                  Read it
-                </ExtLink>
-              )}
-            </article>
-          ))}
-        </div>
-      </Section>
-      <Section title="Books">
-        <div className="book-list">
-          {writing.books.map((b) => (
-            <article key={b.id} className={`book-card ${b.title ? '' : 'is-slot'}`}>
-              <div className="book-cover" aria-hidden="true">
-                <span>{b.title ?? 'Untitled'}</span>
-              </div>
-              <div>
-                <div className="card-head">
-                  <h3>{b.title ?? 'A book, in progress'}</h3>
-                  <Soon>{b.status}</Soon>
-                </div>
-                <p className={b.blurb ? '' : 'slot-hint'}>{b.blurb ?? 'Details land here once there is a title worth sharing.'}</p>
-                {b.url && <ExtLink href={b.url}>Find the book</ExtLink>}
-              </div>
-            </article>
-          ))}
-        </div>
-      </Section>
-    </>
-  )
-}
-
-export const sectionContent: Record<SectionId, () => ReactNode> = {
+/** Every section that opens as a panel; All my links has a page of its own (LinkGarden). */
+export const sectionContent: Record<Exclude<SectionId, 'links'>, () => ReactNode> = {
   work: Work,
   projects: Projects,
   photography: Photography,
   video: Video,
   youtube: Youtube,
   music: Music,
-  listen: Listen,
   countries: Countries,
   trips: Trips,
   'how-i-build': HowIBuild,
@@ -522,5 +406,4 @@ export const sectionContent: Record<SectionId, () => ReactNode> = {
   currently: Currently,
   'travel-and-planning': TravelAndPlanning,
   games: Games,
-  writing: Writing,
 }

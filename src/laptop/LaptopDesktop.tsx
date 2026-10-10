@@ -13,13 +13,11 @@ import { useArrived, useScreenBox } from '../room/zoom'
 
 type Item =
   | { kind: 'project'; id: string; label: string; project: Project }
-  | { kind: 'cases'; id: 'cases'; label: string }
   | { kind: 'text'; id: 'how'; label: string }
   | { kind: 'resume'; id: 'resume'; label: string }
 
 const items: Item[] = [
   ...projects.map((p): Item => ({ kind: 'project', id: p.id, label: p.name, project: p })),
-  { kind: 'cases', id: 'cases', label: laptop.extras.cases.name },
   { kind: 'text', id: 'how', label: laptop.extras.howIBuild.name },
   { kind: 'resume', id: 'resume', label: laptop.extras.resume.name },
 ]
@@ -246,36 +244,23 @@ function IconArt({ item }: { item: Item }) {
       </svg>
     )
   }
-  if (item.kind === 'text' || item.kind === 'resume') {
-    const pdf = item.kind === 'resume'
-    return (
-      <svg className="icon-art" viewBox="0 0 64 52" aria-hidden="true">
-        <path d="M18 2h20l10 10v37a2 2 0 0 1-2 2H18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#fdfbf6" stroke="#cfc6b8" />
-        <path d="M38 2v8a2 2 0 0 0 2 2h8" fill="#ece5d8" stroke="#cfc6b8" />
-        {pdf ? (
-          <>
-            <rect x="12" y="30" width="30" height="12" rx="2" fill="#d94b3d" />
-            <text x="27" y="39.5" textAnchor="middle" fontSize="8.5" fontWeight="800" fill="#fff" fontFamily="system-ui, sans-serif">
-              PDF
-            </text>
-          </>
-        ) : (
-          <g stroke="#a99f90" strokeWidth="1.6" strokeLinecap="round">
-            <path d="M22 20h20M22 25h20M22 30h16M22 35h20M22 40h12" />
-          </g>
-        )}
-      </svg>
-    )
-  }
-  // the case studies folder
+  const pdf = item.kind === 'resume'
   return (
     <svg className="icon-art" viewBox="0 0 64 52" aria-hidden="true">
-      <path d="M3 9a4 4 0 0 1 4-4h15l5 5h30a4 4 0 0 1 4 4v3H3z" fill="#5f86b8" />
-      <rect x="3" y="14" width="58" height="35" rx="4" fill="#7ea6d6" />
-      <rect x="3" y="14" width="58" height="4" rx="2" fill="#a3c3e8" />
-      <g transform="translate(32 32)" fill="none" stroke="#2f5585" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.9">
-        <path d="M-9 8h18M-6 8V2M0 8v-9M6 8v-5" />
-      </g>
+      <path d="M18 2h20l10 10v37a2 2 0 0 1-2 2H18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#fdfbf6" stroke="#cfc6b8" />
+      <path d="M38 2v8a2 2 0 0 0 2 2h8" fill="#ece5d8" stroke="#cfc6b8" />
+      {pdf ? (
+        <>
+          <rect x="12" y="30" width="30" height="12" rx="2" fill="#d94b3d" />
+          <text x="27" y="39.5" textAnchor="middle" fontSize="8.5" fontWeight="800" fill="#fff" fontFamily="system-ui, sans-serif">
+            PDF
+          </text>
+        </>
+      ) : (
+        <g stroke="#a99f90" strokeWidth="1.6" strokeLinecap="round">
+          <path d="M22 20h20M22 25h20M22 30h16M22 35h20M22 40h12" />
+        </g>
+      )}
     </svg>
   )
 }
@@ -376,7 +361,6 @@ function DeskWindow({ item, compact, reduced, onClose }: { item: Item; compact: 
         <span className="win-bar-end" />
       </div>
       {item.kind === 'project' && <ProjectWindow project={item.project} />}
-      {item.kind === 'cases' && <CasesWindow />}
       {item.kind === 'text' && <HowIBuildFile />}
       {item.kind === 'resume' && <ResumeFile onClose={onClose} />}
     </motion.div>
@@ -450,51 +434,6 @@ function ProjectWindow({ project }: { project: Project }) {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function CasesWindow() {
-  const list = work.caseStudies.items
-  const [i, setI] = useState(0)
-  const c = list[i]
-  const file = (k: number) => `${list[k].title ?? `Case study ${k + 1}`}.md`
-  const steps: [string, string | null, string][] = [
-    ['Problem', c.problem, 'What was stuck.'],
-    ['What I changed', c.change, 'The fix, and how it got adopted.'],
-    ['Result', c.result, 'What it moved, in numbers.'],
-  ]
-  return (
-    <div className="win-body win-split">
-      <nav className="win-side" aria-label="Case studies">
-        <p className="side-head">Case studies</p>
-        {list.map((item, k) => (
-          <button key={item.id} type="button" className={`side-item ${k === i ? 'is-active' : ''}`} onClick={() => setI(k)} aria-pressed={k === i}>
-            <FileGlyph /> {file(k)}
-          </button>
-        ))}
-      </nav>
-      <article className="readme">
-        <p className="readme-path">~/Case studies/{file(i)}</p>
-        <h3>
-          {c.title ?? 'Case study in progress'} {!c.title && <span className="readme-status is-soon">Coming soon</span>}
-        </h3>
-        {c.org && <p className="readme-desc">{c.org}</p>}
-        {!c.title && <p>{work.caseStudies.placeholder}</p>}
-        {steps.map(([label, text, hint]) => (
-          <div key={label}>
-            <h4>{label}</h4>
-            <p className={text ? '' : 'readme-hint'}>{text ?? hint}</p>
-          </div>
-        ))}
-        {c.url && (
-          <p className="readme-actions">
-            <a className="readme-btn" href={c.url} target="_blank" rel="noopener noreferrer">
-              Read the full case study <ExternalIcon width={14} height={14} />
-            </a>
-          </p>
-        )}
-      </article>
     </div>
   )
 }

@@ -117,13 +117,12 @@
 
 .spot-laptop .spot-dot::before,
 .spot-console .spot-dot::before,
-.spot-guitar .spot-dot::before,
+.spot-plant .spot-dot::before,
 .spot-poster .spot-dot::before {
   animation-delay: -0.9s;
 }
 
 .spot-camera .spot-dot::before,
-.spot-books .spot-dot::before,
 .spot-backpack .spot-dot::before,
 .spot-tv .spot-dot::before {
   animation-delay: -1.8s;
@@ -187,12 +186,6 @@
 .spot-name {
   font-weight: 800;
   font-size: 14.5px;
-}
-
-.spot-object {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #7a6a5e;
 }
 
 .room-spot:hover .spot-label,
@@ -445,10 +438,6 @@
 
 .room-scene.is-touch .spot-name {
   font-size: 12.5px;
-}
-
-.room-scene.is-touch .spot-object {
-  display: none;
 }
 
 .touch-hint {

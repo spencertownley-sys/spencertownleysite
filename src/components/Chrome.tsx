@@ -16,7 +16,7 @@ export function SkipLink({ compact, className = '' }: { compact?: boolean; class
   return (
     <a className={`skip-link ${className}`} href="/work" onClick={go} aria-label={site.skipLabel}>
       {!compact && <span className="skip-long">{site.skipLabel}</span>}
-      <span className="skip-short">Resume + case studies</span>
+      <span className="skip-short">Career + resume</span>
       <ArrowIcon width={16} height={16} />
     </a>
   )
