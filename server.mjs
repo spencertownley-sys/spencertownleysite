@@ -149,7 +149,9 @@ const server = createServer(async (req, res) => {
       // App route: let the client router handle it.
       const clean = pathname.replace(/\/+$/, '') || '/'
       const known = KNOWN.size === 0 || KNOWN.has(clean)
-      const body = await index()
+      // A section page prerendered at build time (its own title and canonical), else the shell.
+      const page = known && clean !== '/' ? await fileInfo(join(ROOT, clean, 'index.html')) : null
+      const body = page ? await readFile(join(ROOT, clean, 'index.html')) : await index()
       res.writeHead(known ? 200 : 404, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-cache', ...SECURITY })
       return res.end(req.method === 'HEAD' ? undefined : body)
     }
