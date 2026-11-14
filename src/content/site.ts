@@ -132,7 +132,7 @@ export const sections: Section[] = [
     id: 'music',
     path: '/music',
     title: 'Now playing: Spotted Zebra',
-    subtitle: "Seattle's premier party rock cover band",
+    subtitle: 'Seattle party rock cover band. I play bass.',
     object: 'speaker',
     roomLabel: 'Music',
     brain: { region: 'Auditory cortex', label: 'Music', teaser: 'Spotted Zebra, the band' },
