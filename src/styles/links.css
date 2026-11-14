@@ -132,6 +132,11 @@
   pointer-events: none;
 }
 
+.leaf-link:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
 .leaf-link:hover .leaf-lift,
 .leaf-link:focus-visible .leaf-lift {
   opacity: 1;
