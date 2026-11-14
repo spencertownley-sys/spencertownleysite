@@ -1,0 +1,14 @@
+{
+  "name": "Spencer Townley",
+  "short_name": "Spencer Townley",
+  "description": "Product, AI, and process improvement. Side projects, resume, photography, music, and 47 countries.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#f4efe4",
+  "theme_color": "#f4efe4",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/favicon-32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
