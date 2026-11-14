@@ -7,6 +7,7 @@ import {
   links,
   music,
   photography,
+  privacy,
   projects,
   projectsCopy,
   site,
@@ -329,6 +330,69 @@ function HowIBuild() {
   )
 }
 
+function Privacy() {
+  return (
+    <>
+      <p className="lead">{privacy.lead}</p>
+      <p className="map-hint">Last updated {privacy.updated}</p>
+      <Section title="Who is responsible">
+        <p>
+          {privacy.controller.text} Contact: <a href={`mailto:${site.email}`}>{site.email}</a>.
+        </p>
+      </Section>
+      <Section title="Cookies and browser storage">
+        <p>{privacy.cookies}</p>
+        <ul className="evidence">
+          {privacy.storage.map((s) => (
+            <li key={s.key}>
+              <strong>{s.key}</strong> <span>{s.purpose} ({s.type}, localStorage)</span>
+            </li>
+          ))}
+        </ul>
+        <p>{privacy.storageNote}</p>
+      </Section>
+      <Section title="What is collected">
+        <ul className="evidence">
+          {privacy.collected.map((c) => (
+            <li key={c}>{c}</li>
+          ))}
+        </ul>
+      </Section>
+      <Section title="Other companies your browser contacts">
+        <p>{privacy.loadsLead}</p>
+        <ul className="evidence">
+          {privacy.loads.map((l) => (
+            <li key={l.who}>
+              <strong>{l.who}</strong> <span>{l.hosts}. {l.when}</span>
+            </li>
+          ))}
+        </ul>
+      </Section>
+      <Section title="Who hosts the site">
+        <ul className="evidence">
+          {privacy.hosts.map((h) => (
+            <li key={h.who}>
+              <strong>{h.who}</strong> <span>{h.what}</span>
+            </li>
+          ))}
+        </ul>
+      </Section>
+      <Section title="How long it is kept">
+        <p>{privacy.retention}</p>
+      </Section>
+      <Section title="Your rights">
+        <p>{privacy.rights}</p>
+      </Section>
+      <Section title="Children">
+        <p>{privacy.children}</p>
+      </Section>
+      <Section title="Changes">
+        <p>{privacy.changes}</p>
+      </Section>
+    </>
+  )
+}
+
 function Framework() {
   return <Placeholder title="Reserved slot">{framework.placeholder}</Placeholder>
 }
@@ -401,4 +465,5 @@ export const sectionContent: Record<Exclude<SectionId, 'links'>, () => ReactNode
   currently: Currently,
   'travel-and-planning': TravelAndPlanning,
   games: Games,
+  privacy: Privacy,
 }

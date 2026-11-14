@@ -114,7 +114,7 @@ function Panel({
   }
 
   // The Brain names the region; in the Room the object speaks for itself.
-  const eyebrow = mode === 'brain' ? section.brain.region : obj ? null : 'Brain only'
+  const eyebrow = section.utility ? null : mode === 'brain' ? section.brain.region : obj ? null : 'Brain only'
 
   return (
     <motion.div

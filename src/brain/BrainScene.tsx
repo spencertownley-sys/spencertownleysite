@@ -347,7 +347,7 @@ function BrainList({ onOpen }: Props) {
 
   const group = (only: boolean) =>
     visibleSections
-      .filter((s) => !!s.brain.only === only)
+      .filter((s) => !s.utility && !!s.brain.only === only)
       .map((s) => (
         <li key={s.id} ref={(el) => void (refs.current[s.id] = el)} className={only ? 'is-only' : ''}>
           <button type="button" className="brain-item" onClick={() => tap(s.id)}>

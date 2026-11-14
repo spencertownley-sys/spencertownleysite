@@ -463,6 +463,44 @@ a {
   background: #fff;
 }
 
+.footer-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.footer-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.footer-link:hover {
+  color: var(--red-text);
+}
+
+[data-mode='brain'] .footer-link:hover {
+  color: #fff;
+}
+
+.grid-footer {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 14px 14px 24px;
+}
+
 /* ---------- brain skin for the chrome ---------- */
 
 [data-mode='brain'] .wordmark-name {
@@ -528,6 +566,11 @@ a {
 [data-mode='brain'] .tray-link::after {
   background: var(--blue);
   color: var(--night);
+  font-family: var(--font-mono);
+}
+
+[data-mode='brain'] .footer-link {
+  color: var(--blue);
   font-family: var(--font-mono);
 }
 

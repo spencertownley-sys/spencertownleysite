@@ -47,6 +47,7 @@ export type SectionId =
   | 'travel-and-planning'
   | 'games'
   | 'links'
+  | 'privacy'
 
 export type ObjectId =
   | 'tv'
@@ -74,6 +75,8 @@ export interface Section {
   compact?: boolean
   /** Unfinished: left out of the Brain, not routable, and not in the sitemap until content exists. Remove the flag when it does. */
   hidden?: boolean
+  /** A page about the site itself (privacy): no Room object, no Brain node, not listed in the Brain's list view. */
+  utility?: boolean
   brain: {
     region: string
     label: string
@@ -172,6 +175,14 @@ export const sections: Section[] = [
     object: 'plant',
     roomLabel: 'All my links',
     brain: { region: 'Dendrites', label: 'All links', teaser: 'every project, one leaf each' },
+  },
+  {
+    id: 'privacy',
+    path: '/privacy',
+    title: 'Privacy and storage',
+    subtitle: 'What this site stores and loads',
+    utility: true,
+    brain: { region: 'Privacy', label: 'Privacy and storage', teaser: 'what the site stores' },
   },
   {
     id: 'how-i-build',
@@ -367,6 +378,43 @@ export const howIBuild = {
     { name: 'Shortlist', note: 'Picking photos as a group, without the group chat.' },
     { name: 'Make That', note: 'What should I actually make?' },
   ],
+}
+
+/** The /privacy page. It is also the cookie notice: the banner links here. */
+export const privacy = {
+  updated: '14 November 2026',
+  lead: 'This site sets no cookies, runs no analytics and has no forms or accounts. This page lists the little it does store in your browser and which other companies load when you click.',
+  controller: {
+    // Owner: fill in the two bracketed values before this page goes to anyone who needs them.
+    text: 'spencertownley.com is run by [PLACEHOLDER: owner legal name], [PLACEHOLDER: city, state, country].',
+  },
+  cookies: 'This site does not set any cookies.',
+  storage: [
+    { key: 'st-muted', purpose: 'Remembers whether you turned the sound off.', type: 'Necessary' },
+    { key: 'jimothy.save', purpose: 'Saves your progress in the Jimothy game on the TV, only after you play it.', type: 'Necessary' },
+    { key: 'cookie-consent', purpose: 'Remembers that you have seen the storage notice. It expires after 180 days.', type: 'Necessary' },
+  ],
+  storageNote: 'All three live in localStorage on your device and are never sent to this site. You can clear them in your browser settings.',
+  collected: [
+    'Nothing is collected by the site itself: no forms, accounts or analytics.',
+    'Email messages you choose to send to the contact address. They are forwarded by Cloudflare Email Routing once it is switched on.',
+    'IP addresses and request details in the hosting and CDN logs kept by Railway and Cloudflare.',
+  ],
+  loadsLead: 'Your browser contacts these hosts only when you ask for them:',
+  loads: [
+    { who: 'My own side projects', hosts: 'points-pool-production.up.railway.app, makethat.wtf, shortlist.spencertownley.workers.dev, trydownbeat.app', when: 'Only when you open that project in the laptop preview. They get your IP address and browser details, and no referrer.' },
+    { who: 'My own games (More., Smoosh)', hosts: 'makemorepaperclips.com, spencertownley-sys.github.io', when: 'Only when you start that game on the TV. Each keeps its own saves in its own browser storage.' },
+    { who: 'Cloudflare Web Analytics', hosts: 'static.cloudflareinsights.com', when: 'Cloudflare may try to add this automatically. This site blocks it with its content security policy, so it never runs and nothing is sent.' },
+  ],
+  hosts: [
+    { who: 'Railway', what: 'Hosts the Node server (United States).' },
+    { who: 'Cloudflare', what: 'DNS, CDN and security proxy, and Email Routing for the contact address once enabled (United States).' },
+  ],
+  retention: '[PLACEHOLDER: how long server logs and emailed enquiries are kept, for example logs 30 days and enquiries 24 months]',
+  rights:
+    'Wherever you live, you can ask what I hold about you, or ask me to correct or delete it, by emailing the contact address. I will answer within 30 days. This site does not sell or share personal information, and it honours Global Privacy Control signals.',
+  children: 'This site is not directed at children and does not knowingly collect their data.',
+  changes: 'If this page changes in a way that matters, the date above changes.',
 }
 
 export const framework = {
