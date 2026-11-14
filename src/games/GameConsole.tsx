@@ -411,6 +411,9 @@ function GameFrame({ game, big, glass, reduced, onExit }: { game: Game; big: boo
           src={game.url ?? undefined}
           title={game.title ?? 'Game'}
           allow="fullscreen; gamepad; autoplay"
+          // allow-same-origin lets a same-origin game (Jimothy, under /play/) lift its own sandbox and read this
+          // site's storage. Accepted: every game here is Spencer's own build. A third-party game must instead be
+          // hosted on a separate origin (for example games.spencertownley.com), never under /play/.
           sandbox="allow-scripts allow-same-origin allow-pointer-lock"
           style={fit.scale < 1 ? { width: fit.width, height: fit.height, transform: `scale(${fit.scale})` } : undefined}
         />
