@@ -109,6 +109,15 @@ export function IconTray() {
   )
 }
 
+/** Re-opens the storage notice (cookie-banner.js listens for data-cookie-settings on the whole document). */
+export function CookieSettingsButton() {
+  return (
+    <button type="button" data-cookie-settings className="footer-link cookie-settings">
+      Cookie settings
+    </button>
+  )
+}
+
 /** Opens /privacy from inside the app; a plain link otherwise. */
 export function PrivacyLink() {
   const go = (e: MouseEvent<HTMLAnchorElement>) => {
@@ -138,6 +147,7 @@ export function BottomBar({ compact, mode }: { compact: boolean; mode: Mode }) {
       {!compact && (
         <span className="footer-links">
           <PrivacyLink />
+          <CookieSettingsButton />
         </span>
       )}
       {!compact && (

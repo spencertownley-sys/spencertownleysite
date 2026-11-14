@@ -4,8 +4,8 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  // public/play holds games built elsewhere and copied in
-  { ignores: ['dist', 'node_modules', 'public/play'] },
+  // public/play holds games built elsewhere and copied in; cookie-banner.js is a vendored kit file used verbatim
+  { ignores: ['dist', 'node_modules', 'public/play', 'public/cookie-banner.js'] },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

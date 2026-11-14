@@ -467,6 +467,17 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 250, 242, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px rgba(40, 24, 12, 0.2);
+}
+
+[data-mode='brain'] .footer-links {
+  background: rgba(5, 7, 10, 0.75);
+  border: 1px solid rgba(61, 220, 255, 0.4);
 }
 
 .footer-link {
@@ -746,4 +757,55 @@ a {
 
 html[data-mode='brain'] .cursor-glow {
   background: radial-gradient(circle, rgba(61, 220, 255, 0.11) 0%, rgba(61, 220, 255, 0.045) 38%, rgba(61, 220, 255, 0) 68%);
+}
+
+/* ---------- storage notice (public/cookie-banner.css; the banner is a child of body, not .app) ---------- */
+
+.cb {
+  --cb-bg: #fbf7ee;
+  --cb-fg: #231c1a;
+  --cb-muted: #6d5c52;
+  --cb-border: #231c1a;
+  --cb-accent: #b03f2c;
+  --cb-accent-fg: #ffffff;
+  --cb-radius: 14px;
+  --cb-font: 'Nunito Variable', ui-rounded, system-ui, sans-serif;
+  --cb-bottom: 72px; /* clears the fixed bottom bar (--foot-h is 64px) */
+}
+
+html[data-mode='brain'] .cb {
+  --cb-bg: rgba(6, 10, 14, 0.94);
+  --cb-fg: #c9f4ff;
+  --cb-muted: rgba(61, 220, 255, 0.62);
+  --cb-border: rgba(61, 220, 255, 0.42);
+  --cb-accent: #3ddcff;
+  --cb-accent-fg: #05070a;
+  --cb-font: 'JetBrains Mono Variable', ui-monospace, monospace;
+}
+
+/* The stylesheet's own dark scheme must not override the site's two themes. */
+@media (prefers-color-scheme: dark) {
+  .cb {
+    --cb-bg: #fbf7ee;
+    --cb-fg: #231c1a;
+    --cb-muted: #6d5c52;
+    --cb-border: #231c1a;
+    --cb-accent: #b03f2c;
+    --cb-accent-fg: #ffffff;
+  }
+  html[data-mode='brain'] .cb {
+    --cb-bg: rgba(6, 10, 14, 0.94);
+    --cb-fg: #c9f4ff;
+    --cb-muted: rgba(61, 220, 255, 0.62);
+    --cb-border: rgba(61, 220, 255, 0.42);
+    --cb-accent: #3ddcff;
+    --cb-accent-fg: #05070a;
+  }
+}
+
+/* Phones: the bottom bar is taller there. */
+@media (max-width: 639px), (max-height: 479px) {
+  .cb {
+    --cb-bottom: 76px;
+  }
 }

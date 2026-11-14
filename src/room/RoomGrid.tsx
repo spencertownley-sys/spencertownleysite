@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { sectionById, site, type SectionId } from '../content/site'
 import { ambience } from '../lib/audio'
 import { gridOrder, roomObjects } from './objects'
-import { PrivacyLink } from '../components/Chrome'
+import { CookieSettingsButton, PrivacyLink } from '../components/Chrome'
 import { RoomPhoto, useRoomView, WindowNote } from './RoomScene'
 
 /** Phones' list view: the room drifting by up top, then the same objects as a simple grid. */
@@ -53,6 +53,7 @@ export function RoomGrid({ onOpen, onBack }: { onOpen: (id: SectionId) => void; 
       </aside>
       <p className="grid-footer">
         <PrivacyLink />
+        <CookieSettingsButton />
       </p>
     </div>
   )
