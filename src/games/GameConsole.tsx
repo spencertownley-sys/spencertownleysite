@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type 
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, usePresence } from 'framer-motion'
 import '@fontsource/press-start-2p/latin-400.css'
-import { games, sectionById, type Game } from '../content/site'
+import { games, sectionById, visibleGames, type Game } from '../content/site'
 import { ambience } from '../lib/audio'
 import { useMediaQuery, useReducedMotion } from '../lib/hooks'
 import { screenBox, zoomTrack, type Box } from '../room/zoom'
@@ -100,7 +100,7 @@ export function GameConsole({ compact, camera, onClose }: Props) {
   const [index, setIndex] = useState(0)
   const [screen, setScreen] = useState<Screen>({ kind: 'menu' })
   const [view, setView] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }))
-  const list = games.items
+  const list = visibleGames
 
   useEffect(() => {
     const onResize = () => setView({ w: window.innerWidth, h: window.innerHeight })

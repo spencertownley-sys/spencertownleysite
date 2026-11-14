@@ -72,6 +72,8 @@ export interface Section {
   roomLabel?: string
   /** Compact sections render as a small link sheet instead of a full panel. */
   compact?: boolean
+  /** Unfinished: left out of the Brain, not routable, and not in the sitemap until content exists. Remove the flag when it does. */
+  hidden?: boolean
   brain: {
     region: string
     label: string
@@ -183,6 +185,7 @@ export const sections: Section[] = [
     path: '/thinking/framework',
     title: 'A framework I keep coming back to',
     subtitle: 'Reserved slot',
+    hidden: true,
     brain: { region: 'Association cortex', label: 'A framework', teaser: 'the one I keep coming back to', only: true },
   },
   {
@@ -190,6 +193,7 @@ export const sections: Section[] = [
     path: '/thinking/currently',
     title: 'Currently obsessed with',
     subtitle: 'Whatever is pulling focus right now',
+    hidden: true,
     brain: { region: 'Reward circuit', label: 'Currently obsessed', teaser: 'what has my attention', only: true },
   },
   {
@@ -201,11 +205,13 @@ export const sections: Section[] = [
   },
 ]
 
+export const visibleSections = sections.filter((s) => !s.hidden)
+
 export const sectionById = Object.fromEntries(sections.map((s) => [s.id, s])) as Record<SectionId, Section>
 
 export function sectionForPath(path: string): Section | undefined {
   const clean = path.replace(/\/+$/, '') || '/'
-  return sections.find((s) => s.path === clean)
+  return sections.find((s) => !s.hidden && s.path === clean)
 }
 
 /* ------------------------------------------------------------------ */
@@ -287,6 +293,8 @@ export const work = {
     placeholder: 'The PDF is on its way. Until then, email me and I will send the current version the same day.',
   },
   story: {
+    // Hidden until the longer career story is written.
+    hidden: true,
     placeholder:
       'The longer career story, where I have been and what I owned there, is being written. The resume will cover it first.',
   },
@@ -309,11 +317,14 @@ export const photography = {
     { src: '/photos/gallery-portrait-2.jpg', alt: 'Family session with a new baby', w: 667, h: 1000, caption: 'Family with baby' },
     { src: '/photos/gallery-portrait-3.jpg', alt: 'Studio portrait session', w: 1000, h: 800, caption: 'Studio session' },
   ],
-  placeholders: ['Landscape select', 'Landscape select', 'Wildlife select', 'Wildlife select'],
+  // Empty tiles stay hidden until the landscape and wildlife selects exist.
+  placeholders: { hidden: true, labels: ['Landscape select', 'Landscape select', 'Wildlife select', 'Wildlife select'] },
 }
 
 export const video = {
-  lead: "If you like my photos, you'll love my videos. A reel is being cut together now, so stay tuned.",
+  lead: "If you like my photos, you'll love my videos. The full portfolio lives on my photography site.",
+  // The reel player stays hidden until there is a reel to play.
+  reel: { hidden: true },
 }
 
 export const youtube = {
@@ -328,8 +339,11 @@ export const music = {
 export const trips = {
   lead:
     "Hand me a wish list and I'll turn it into a trip that you'll love. The right destinations, the right pace, and room for the good surprises.",
-  placeholder:
-    'A complete example itinerary is coming soon. Here is the shape each one takes.',
+  // Hidden until a complete example itinerary exists.
+  placeholder: {
+    hidden: true,
+    text: 'A complete example itinerary is coming soon. Here is the shape each one takes.',
+  },
   skeleton: [
     { day: 'Before', title: 'The brief', note: 'Who is going, what they care about, what they would hate.' },
     { day: 'Day 1', title: 'Land and get oriented', note: 'Nothing ambitious. Walk, eat, sleep.' },
@@ -379,6 +393,8 @@ export interface Game {
   blurb: string | null
   /** Where the game runs. It plays inside the TV (it must allow being framed; add its origin to frame-src in server.mjs). */
   url: string | null
+  /** Empty cartridge slot: left off the menu until it has a game. */
+  hidden?: boolean
   /**
    * The smallest screen the game lays out well on, in CSS pixels. When the TV glass is smaller,
    * the game runs at a larger size and is scaled down to fit, so it shrinks instead of cropping.
@@ -424,11 +440,13 @@ export const games = {
       // A portrait phone game: its home screen and board need about a phone's height.
       minViewport: { width: 360, height: 760 },
     },
-    { id: 'game-4', title: null, blurb: null, url: null },
+    { id: 'game-4', title: null, blurb: null, url: null, hidden: true },
   ] as Game[],
   emptySlot: 'EMPTY SLOT',
   comingSoon: 'This cartridge is still being soldered together. Check back soon.',
 }
+
+export const visibleGames = games.items.filter((g) => !g.hidden)
 
 export const washington = {
   eyebrow: 'Out the window',

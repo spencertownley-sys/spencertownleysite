@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import brainSvg from '../../assets/brain.svg'
-import { sectionById, sections, site, type SectionId } from '../content/site'
+import { sectionById, site, visibleSections, type SectionId } from '../content/site'
 import { fx } from '../fx/fx'
 import { ambience } from '../lib/audio'
 import { useMediaQuery, useReducedMotion } from '../lib/hooks'
@@ -346,7 +346,7 @@ function BrainList({ onOpen }: Props) {
   }
 
   const group = (only: boolean) =>
-    sections
+    visibleSections
       .filter((s) => !!s.brain.only === only)
       .map((s) => (
         <li key={s.id} ref={(el) => void (refs.current[s.id] = el)} className={only ? 'is-only' : ''}>

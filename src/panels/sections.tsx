@@ -15,6 +15,7 @@ import {
   video,
   work,
   games,
+  visibleGames,
   youtube,
   type SectionId,
 } from '../content/site'
@@ -83,7 +84,7 @@ function Work() {
         </ul>
       </Section>
 
-      <Placeholder title="The longer story">{work.story.placeholder}</Placeholder>
+      {!work.story.hidden && <Placeholder title="The longer story">{work.story.placeholder}</Placeholder>}
 
       <div className="btn-row">
         <ExtLink href={`mailto:${site.email}`} icon={<MailIcon width={17} height={17} />}>
@@ -151,16 +152,18 @@ function Photography() {
           ))}
         </div>
       </Section>
-      <Section title="Landscapes and wildlife" aside={<Soon>Selects coming soon</Soon>}>
-        <div className="photo-placeholders">
-          {photography.placeholders.map((label, i) => (
-            <div key={i} className="photo-ph">
-              <CameraIcon width={22} height={22} />
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
-      </Section>
+      {!photography.placeholders.hidden && (
+        <Section title="Landscapes and wildlife" aside={<Soon>Selects coming soon</Soon>}>
+          <div className="photo-placeholders">
+            {photography.placeholders.labels.map((label, i) => (
+              <div key={i} className="photo-ph">
+                <CameraIcon width={22} height={22} />
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
       <div className="btn-row">
         <ExtLink href={links.photoSite.url}>Full portfolio</ExtLink>
         <ExtLink href={links.photoInstagram.url} icon={<InstagramIcon width={17} height={17} />} variant="ghost">
@@ -178,12 +181,14 @@ function Video() {
   return (
     <>
       <p className="lead">{video.lead}</p>
-      <div className="reel-frame">
-        <div className="reel-screen">
-          <span className="reel-play" aria-hidden="true" />
-          <span className="reel-label">Reel coming soon</span>
+      {!video.reel.hidden && (
+        <div className="reel-frame">
+          <div className="reel-screen">
+            <span className="reel-play" aria-hidden="true" />
+            <span className="reel-label">Reel coming soon</span>
+          </div>
         </div>
-      </div>
+      )}
       <div className="btn-row">
         <ExtLink href={links.videoSite.url}>Video portfolio</ExtLink>
       </div>
@@ -273,9 +278,11 @@ function Trips() {
   return (
     <>
       <p className="lead">{trips.lead}</p>
-      <Placeholder title="Example itinerary" badge="Itinerary coming soon">
-        {trips.placeholder}
-      </Placeholder>
+      {!trips.placeholder.hidden && (
+        <Placeholder title="Example itinerary" badge="Itinerary coming soon">
+          {trips.placeholder.text}
+        </Placeholder>
+      )}
       <ol className="timeline">
         {trips.skeleton.map((s) => (
           <li key={s.day}>
@@ -360,7 +367,7 @@ function Games() {
     <>
       <p className="lead">{games.lead}</p>
       <div className="case-list">
-        {games.items.map((g, i) => (
+        {visibleGames.map((g, i) => (
           <article key={g.id} className={`card case-card ${g.title ? '' : 'is-slot'}`}>
             <div className="card-head">
               <span className="case-num" aria-hidden="true">

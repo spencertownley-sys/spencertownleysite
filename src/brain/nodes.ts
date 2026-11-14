@@ -1,4 +1,4 @@
-import type { SectionId } from '../content/site'
+import { sectionById, type SectionId } from '../content/site'
 
 export interface BrainNodeDef {
   id: SectionId
@@ -12,7 +12,7 @@ export interface BrainNodeDef {
   point?: [number, number, number]
 }
 
-export const brainNodes: BrainNodeDef[] = [
+const allNodes: BrainNodeDef[] = [
   { id: 'work', dir: [0.3, 0.55, 0.8] }, // prefrontal cortex
   { id: 'trips', dir: [-0.15, 0.05, 1] }, // frontal pole
   { id: 'youtube', dir: [-0.8, -0.1, 0.55] }, // Broca's area (left)
@@ -28,3 +28,6 @@ export const brainNodes: BrainNodeDef[] = [
   { id: 'games', dir: [0.4, -0.7, -0.75] }, // cerebellum, low at the back
   { id: 'links', dir: [-0.85, 0.4, -0.3] }, // dendrites, where every connection branches out
 ]
+
+// Nodes for unfinished sections (flagged `hidden` in site.ts) stay off the brain.
+export const brainNodes: BrainNodeDef[] = allNodes.filter((n) => !sectionById[n.id].hidden)
