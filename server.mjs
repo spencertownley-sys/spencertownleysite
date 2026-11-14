@@ -76,6 +76,23 @@ async function fileInfo(path) {
   }
 }
 
+// Paths the app answers with a real page: '/' plus every <loc> in sitemap.xml.
+// Anything else gets the same shell with a 404 status, so typos are not soft 404s.
+const KNOWN = new Set(['/'])
+try {
+  const xml = await readFile(join(ROOT, 'sitemap.xml'), 'utf8')
+  for (const m of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+    try {
+      KNOWN.add(new URL(m[1]).pathname.replace(/\/+$/, '') || '/')
+    } catch {
+      // ignore a malformed entry
+    }
+  }
+} catch (err) {
+  console.error('sitemap.xml not readable; every app route will be treated as known', err)
+  KNOWN.clear()
+}
+
 let indexCache = { mtime: 0, body: null }
 async function index() {
   const path = join(ROOT, 'index.html')
@@ -130,8 +147,10 @@ const server = createServer(async (req, res) => {
         return res.end('Not found')
       }
       // App route: let the client router handle it.
+      const clean = pathname.replace(/\/+$/, '') || '/'
+      const known = KNOWN.size === 0 || KNOWN.has(clean)
       const body = await index()
-      res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-cache', ...SECURITY })
+      res.writeHead(known ? 200 : 404, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-cache', ...SECURITY })
       return res.end(req.method === 'HEAD' ? undefined : body)
     }
 
