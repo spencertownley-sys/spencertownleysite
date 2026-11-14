@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type 
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, usePresence } from 'framer-motion'
 import '@fontsource/press-start-2p/latin-400.css'
-import { games, sectionById, type Game } from '../content/site'
+import { games, sectionById, visibleGames, type Game } from '../content/site'
 import { ambience } from '../lib/audio'
 import { useMediaQuery, useReducedMotion } from '../lib/hooks'
 import { screenBox, zoomTrack, type Box } from '../room/zoom'
@@ -100,7 +100,7 @@ export function GameConsole({ compact, camera, onClose }: Props) {
   const [index, setIndex] = useState(0)
   const [screen, setScreen] = useState<Screen>({ kind: 'menu' })
   const [view, setView] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }))
-  const list = games.items
+  const list = visibleGames
 
   useEffect(() => {
     const onResize = () => setView({ w: window.innerWidth, h: window.innerHeight })
@@ -411,6 +411,9 @@ function GameFrame({ game, big, glass, reduced, onExit }: { game: Game; big: boo
           src={game.url ?? undefined}
           title={game.title ?? 'Game'}
           allow="fullscreen; gamepad; autoplay"
+          // allow-same-origin lets a same-origin game (Jimothy, under /play/) lift its own sandbox and read this
+          // site's storage. Accepted: every game here is Spencer's own build. A third-party game must instead be
+          // hosted on a separate origin (for example games.spencertownley.com), never under /play/.
           sandbox="allow-scripts allow-same-origin allow-pointer-lock"
           style={fit.scale < 1 ? { width: fit.width, height: fit.height, transform: `scale(${fit.scale})` } : undefined}
         />

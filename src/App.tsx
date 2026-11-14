@@ -10,6 +10,7 @@ import { closeToScene, navigate, setMode, useLocation, type Mode } from './lib/r
 import { GameConsole } from './games/GameConsole'
 import { LaptopDesktop } from './laptop/LaptopDesktop'
 import { LinkGarden } from './links/LinkGarden'
+import { NotFound } from './panels/NotFound'
 import { PanelHost } from './panels/PanelHost'
 import { RoomGrid } from './room/RoomGrid'
 import { RoomScene } from './room/RoomScene'
@@ -29,6 +30,7 @@ export default function App() {
   const compact = useMediaQuery(COMPACT_QUERY)
   const reduced = useReducedMotion()
   const section = sectionForPath(path)
+  const notFound = !section && path !== '/'
   // In the Room, the projects live on the laptop, the games on the console under the TV,
   // and all the links on the pothos: the camera flies in to them instead of opening a panel.
   const zoomTo: ZoomTarget | null =
@@ -76,8 +78,18 @@ export default function App() {
   }, [mode])
 
   useEffect(() => {
-    document.title = section ? `${section.title} | ${site.name}` : `${site.name} | ${site.role}`
-  }, [section])
+    document.title = notFound ? `Not found | ${site.name}` : section ? `${section.title} | ${site.name}` : `${site.name} | ${site.role}`
+    // Keep unknown addresses out of search results.
+    const existing = document.querySelector('meta[name="robots"]')
+    if (notFound && !existing) {
+      const m = document.createElement('meta')
+      m.name = 'robots'
+      m.content = 'noindex'
+      document.head.appendChild(m)
+    } else if (!notFound && existing?.getAttribute('content') === 'noindex') {
+      existing.remove()
+    }
+  }, [section, notFound])
 
   // Fetch the Brain code in the background so the first toggle is quick.
   useEffect(() => {
@@ -99,9 +111,9 @@ export default function App() {
     )
 
   return (
-    <div className={`app ${compact ? 'is-compact' : ''} ${section ? 'panel-open' : ''}`} data-mode={mode}>
+    <div className={`app ${compact ? 'is-compact' : ''} ${section || notFound ? 'panel-open' : ''}`} data-mode={mode}>
       <TopBar mode={mode} onMode={changeMode} compact={compact} />
-      <main className="scene-root" inert={section ? true : undefined}>
+      <main className="scene-root" inert={section || notFound ? true : undefined}>
         <h1 className="sr-only">
           {site.name}: {site.role}
         </h1>
@@ -129,6 +141,7 @@ export default function App() {
       <FxCanvas mode={mode} />
       <CursorGlow />
       <PanelHost section={zoomTo || garden ? undefined : section} mode={mode} compact={compact} onClose={close} />
+      {notFound && <NotFound onClose={close} />}
       <AnimatePresence initial={false}>
         {zoomTo === 'laptop' && <LaptopDesktop key="laptop" compact={compact} camera={camera} onClose={close} />}
         {zoomTo === 'console' && <GameConsole key="console" compact={compact} camera={camera} onClose={close} />}

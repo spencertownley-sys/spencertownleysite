@@ -78,11 +78,11 @@
 
 .garden-eyebrow {
   margin: 0 0 2px;
-  font-size: calc(11px * var(--k));
+  font-size: max(12px, calc(11px * var(--k)));
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .garden-card h2 {
@@ -130,6 +130,11 @@
     transform 0.32s cubic-bezier(0.3, 1.5, 0.5, 1),
     filter 0.25s ease;
   pointer-events: none;
+}
+
+.leaf-link:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
 }
 
 .leaf-link:hover .leaf-lift,

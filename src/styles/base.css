@@ -5,6 +5,8 @@
   --paper: #fbf7ee;
   --ink: #231c1a;
   --red: #d6543f;
+  /* terracotta for text and button fills: 5.1:1 on cream, 5.8:1 with white text. Keep --red for decorative fills. */
+  --red-text: #b03f2c;
   --green: #3f7d4e;
   --mustard: #d9a441;
   --sky: #5fb4d9;
@@ -228,7 +230,7 @@ a {
   font-size: 14px;
   text-decoration: none;
   white-space: nowrap;
-  background: var(--red);
+  background: var(--red-text);
   color: #fff;
   border: 0;
   box-shadow: 0 8px 22px rgba(150, 50, 25, 0.38);
@@ -434,7 +436,7 @@ a {
 }
 
 .room-intro span {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .panel-open .room-intro {
@@ -459,6 +461,55 @@ a {
 
 .contact-link:hover {
   background: #fff;
+}
+
+.footer-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 250, 242, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px rgba(40, 24, 12, 0.2);
+}
+
+[data-mode='brain'] .footer-links {
+  background: rgba(5, 7, 10, 0.75);
+  border: 1px solid rgba(61, 220, 255, 0.4);
+}
+
+.footer-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.footer-link:hover {
+  color: var(--red-text);
+}
+
+[data-mode='brain'] .footer-link:hover {
+  color: #fff;
+}
+
+.grid-footer {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 14px 14px 24px;
 }
 
 /* ---------- brain skin for the chrome ---------- */
@@ -526,6 +577,11 @@ a {
 [data-mode='brain'] .tray-link::after {
   background: var(--blue);
   color: var(--night);
+  font-family: var(--font-mono);
+}
+
+[data-mode='brain'] .footer-link {
+  color: var(--blue);
   font-family: var(--font-mono);
 }
 
@@ -701,4 +757,55 @@ a {
 
 html[data-mode='brain'] .cursor-glow {
   background: radial-gradient(circle, rgba(61, 220, 255, 0.11) 0%, rgba(61, 220, 255, 0.045) 38%, rgba(61, 220, 255, 0) 68%);
+}
+
+/* ---------- storage notice (public/cookie-banner.css; the banner is a child of body, not .app) ---------- */
+
+.cb {
+  --cb-bg: #fbf7ee;
+  --cb-fg: #231c1a;
+  --cb-muted: #6d5c52;
+  --cb-border: #231c1a;
+  --cb-accent: #b03f2c;
+  --cb-accent-fg: #ffffff;
+  --cb-radius: 14px;
+  --cb-font: 'Nunito Variable', ui-rounded, system-ui, sans-serif;
+  --cb-bottom: 72px; /* clears the fixed bottom bar (--foot-h is 64px) */
+}
+
+html[data-mode='brain'] .cb {
+  --cb-bg: rgba(6, 10, 14, 0.94);
+  --cb-fg: #c9f4ff;
+  --cb-muted: rgba(61, 220, 255, 0.62);
+  --cb-border: rgba(61, 220, 255, 0.42);
+  --cb-accent: #3ddcff;
+  --cb-accent-fg: #05070a;
+  --cb-font: 'JetBrains Mono Variable', ui-monospace, monospace;
+}
+
+/* The stylesheet's own dark scheme must not override the site's two themes. */
+@media (prefers-color-scheme: dark) {
+  .cb {
+    --cb-bg: #fbf7ee;
+    --cb-fg: #231c1a;
+    --cb-muted: #6d5c52;
+    --cb-border: #231c1a;
+    --cb-accent: #b03f2c;
+    --cb-accent-fg: #ffffff;
+  }
+  html[data-mode='brain'] .cb {
+    --cb-bg: rgba(6, 10, 14, 0.94);
+    --cb-fg: #c9f4ff;
+    --cb-muted: rgba(61, 220, 255, 0.62);
+    --cb-border: rgba(61, 220, 255, 0.42);
+    --cb-accent: #3ddcff;
+    --cb-accent-fg: #05070a;
+  }
+}
+
+/* Phones: the bottom bar is taller there. */
+@media (max-width: 639px), (max-height: 479px) {
+  .cb {
+    --cb-bottom: 76px;
+  }
 }

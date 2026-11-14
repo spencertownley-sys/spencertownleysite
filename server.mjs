@@ -25,6 +25,7 @@ const TYPES = {
   '.webp': 'image/webp',
   '.avif': 'image/avif',
   '.ico': 'image/x-icon',
+  '.webmanifest': 'application/manifest+json',
   '.woff2': 'font/woff2',
   '.woff': 'font/woff',
   '.txt': 'text/plain; charset=utf-8',
@@ -36,6 +37,7 @@ const TYPES = {
 }
 
 const SECURITY = {
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'X-Frame-Options': 'DENY',
@@ -75,6 +77,23 @@ async function fileInfo(path) {
   }
 }
 
+// Paths the app answers with a real page: '/' plus every <loc> in sitemap.xml.
+// Anything else gets the same shell with a 404 status, so typos are not soft 404s.
+const KNOWN = new Set(['/'])
+try {
+  const xml = await readFile(join(ROOT, 'sitemap.xml'), 'utf8')
+  for (const m of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+    try {
+      KNOWN.add(new URL(m[1]).pathname.replace(/\/+$/, '') || '/')
+    } catch {
+      // ignore a malformed entry
+    }
+  }
+} catch (err) {
+  console.error('sitemap.xml not readable; every app route will be treated as known', err)
+  KNOWN.clear()
+}
+
 let indexCache = { mtime: 0, body: null }
 async function index() {
   const path = join(ROOT, 'index.html')
@@ -87,11 +106,11 @@ const server = createServer(async (req, res) => {
   try {
     const host = req.headers.host || ''
     if (host.startsWith('www.')) {
-      res.writeHead(301, { Location: `https://${host.slice(4)}${req.url}` })
+      res.writeHead(301, { Location: `https://${host.slice(4)}${req.url}`, ...SECURITY })
       return res.end()
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') {
-      res.writeHead(405, { Allow: 'GET, HEAD' })
+      res.writeHead(405, { Allow: 'GET, HEAD', ...SECURITY })
       return res.end()
     }
 
@@ -105,12 +124,12 @@ const server = createServer(async (req, res) => {
     try {
       pathname = decodeURIComponent(url.pathname)
     } catch {
-      res.writeHead(400)
+      res.writeHead(400, SECURITY)
       return res.end()
     }
     let file = normalize(join(ROOT, pathname))
     if (file !== ROOT && !file.startsWith(ROOT + sep)) {
-      res.writeHead(403)
+      res.writeHead(403, SECURITY)
       return res.end()
     }
 
@@ -121,7 +140,7 @@ const server = createServer(async (req, res) => {
     if (!info) {
       if (game && !extname(pathname) && !pathname.endsWith('/') && (await fileInfo(join(file, 'index.html')))) {
         // its relative asset paths need the trailing slash
-        res.writeHead(301, { Location: `${url.pathname}/${url.search}` })
+        res.writeHead(301, { Location: `${url.pathname}/${url.search}`, ...GAME_SECURITY })
         return res.end()
       }
       if (extname(pathname)) {
@@ -129,8 +148,12 @@ const server = createServer(async (req, res) => {
         return res.end('Not found')
       }
       // App route: let the client router handle it.
-      const body = await index()
-      res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-cache', ...SECURITY })
+      const clean = pathname.replace(/\/+$/, '') || '/'
+      const known = KNOWN.size === 0 || KNOWN.has(clean)
+      // A section page prerendered at build time (its own title and canonical), else the shell.
+      const page = known && clean !== '/' ? await fileInfo(join(ROOT, clean, 'index.html')) : null
+      const body = page ? await readFile(join(ROOT, clean, 'index.html')) : await index()
+      res.writeHead(known ? 200 : 404, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-cache', ...SECURITY })
       return res.end(req.method === 'HEAD' ? undefined : body)
     }
 
@@ -169,10 +192,16 @@ const server = createServer(async (req, res) => {
     headers['Content-Length'] = size
     res.writeHead(200, headers)
     if (req.method === 'HEAD') return res.end()
-    createReadStream(target).pipe(res)
+    const stream = createReadStream(target)
+    // A file can vanish between stat and read (a deploy); end this response, keep the server up.
+    stream.on('error', (err) => {
+      console.error(err)
+      res.destroy(err)
+    })
+    stream.pipe(res)
   } catch (err) {
     console.error(err)
-    if (!res.headersSent) res.writeHead(500)
+    if (!res.headersSent) res.writeHead(500, SECURITY)
     res.end()
   }
 })

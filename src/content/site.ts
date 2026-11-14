@@ -47,6 +47,7 @@ export type SectionId =
   | 'travel-and-planning'
   | 'games'
   | 'links'
+  | 'privacy'
 
 export type ObjectId =
   | 'tv'
@@ -72,6 +73,10 @@ export interface Section {
   roomLabel?: string
   /** Compact sections render as a small link sheet instead of a full panel. */
   compact?: boolean
+  /** Unfinished: left out of the Brain, not routable, and not in the sitemap until content exists. Remove the flag when it does. */
+  hidden?: boolean
+  /** A page about the site itself (privacy): no Room object, no Brain node, not listed in the Brain's list view. */
+  utility?: boolean
   brain: {
     region: string
     label: string
@@ -130,7 +135,7 @@ export const sections: Section[] = [
     id: 'music',
     path: '/music',
     title: 'Now playing: Spotted Zebra',
-    subtitle: "Seattle's premier party rock cover band",
+    subtitle: 'Seattle party rock cover band. I play bass.',
     object: 'speaker',
     roomLabel: 'Music',
     brain: { region: 'Auditory cortex', label: 'Music', teaser: 'Spotted Zebra, the band' },
@@ -172,6 +177,14 @@ export const sections: Section[] = [
     brain: { region: 'Dendrites', label: 'All links', teaser: 'every project, one leaf each' },
   },
   {
+    id: 'privacy',
+    path: '/privacy',
+    title: 'Privacy and storage',
+    subtitle: 'What this site stores and loads',
+    utility: true,
+    brain: { region: 'Privacy', label: 'Privacy and storage', teaser: 'what the site stores' },
+  },
+  {
     id: 'how-i-build',
     path: '/thinking/how-i-build',
     title: 'How I build',
@@ -183,6 +196,7 @@ export const sections: Section[] = [
     path: '/thinking/framework',
     title: 'A framework I keep coming back to',
     subtitle: 'Reserved slot',
+    hidden: true,
     brain: { region: 'Association cortex', label: 'A framework', teaser: 'the one I keep coming back to', only: true },
   },
   {
@@ -190,6 +204,7 @@ export const sections: Section[] = [
     path: '/thinking/currently',
     title: 'Currently obsessed with',
     subtitle: 'Whatever is pulling focus right now',
+    hidden: true,
     brain: { region: 'Reward circuit', label: 'Currently obsessed', teaser: 'what has my attention', only: true },
   },
   {
@@ -201,11 +216,13 @@ export const sections: Section[] = [
   },
 ]
 
+export const visibleSections = sections.filter((s) => !s.hidden)
+
 export const sectionById = Object.fromEntries(sections.map((s) => [s.id, s])) as Record<SectionId, Section>
 
 export function sectionForPath(path: string): Section | undefined {
   const clean = path.replace(/\/+$/, '') || '/'
-  return sections.find((s) => s.path === clean)
+  return sections.find((s) => !s.hidden && s.path === clean)
 }
 
 /* ------------------------------------------------------------------ */
@@ -287,6 +304,8 @@ export const work = {
     placeholder: 'The PDF is on its way. Until then, email me and I will send the current version the same day.',
   },
   story: {
+    // Hidden until the longer career story is written.
+    hidden: true,
     placeholder:
       'The longer career story, where I have been and what I owned there, is being written. The resume will cover it first.',
   },
@@ -309,11 +328,14 @@ export const photography = {
     { src: '/photos/gallery-portrait-2.jpg', alt: 'Family session with a new baby', w: 667, h: 1000, caption: 'Family with baby' },
     { src: '/photos/gallery-portrait-3.jpg', alt: 'Studio portrait session', w: 1000, h: 800, caption: 'Studio session' },
   ],
-  placeholders: ['Landscape select', 'Landscape select', 'Wildlife select', 'Wildlife select'],
+  // Empty tiles stay hidden until the landscape and wildlife selects exist.
+  placeholders: { hidden: true, labels: ['Landscape select', 'Landscape select', 'Wildlife select', 'Wildlife select'] },
 }
 
 export const video = {
-  lead: "If you like my photos, you'll love my videos. A reel is being cut together now, so stay tuned.",
+  lead: "If you like my photos, you'll love my videos. The full portfolio lives on my photography site.",
+  // The reel player stays hidden until there is a reel to play.
+  reel: { hidden: true },
 }
 
 export const youtube = {
@@ -328,8 +350,11 @@ export const music = {
 export const trips = {
   lead:
     "Hand me a wish list and I'll turn it into a trip that you'll love. The right destinations, the right pace, and room for the good surprises.",
-  placeholder:
-    'A complete example itinerary is coming soon. Here is the shape each one takes.',
+  // Hidden until a complete example itinerary exists.
+  placeholder: {
+    hidden: true,
+    text: 'A complete example itinerary is coming soon. Here is the shape each one takes.',
+  },
   skeleton: [
     { day: 'Before', title: 'The brief', note: 'Who is going, what they care about, what they would hate.' },
     { day: 'Day 1', title: 'Land and get oriented', note: 'Nothing ambitious. Walk, eat, sleep.' },
@@ -353,6 +378,43 @@ export const howIBuild = {
     { name: 'Shortlist', note: 'Picking photos as a group, without the group chat.' },
     { name: 'Make That', note: 'What should I actually make?' },
   ],
+}
+
+/** The /privacy page. It is also the cookie notice: the banner links here. */
+export const privacy = {
+  updated: '14 November 2026',
+  lead: 'This site sets no cookies, runs no analytics and has no forms or accounts. This page lists the little it does store in your browser and which other companies load when you click.',
+  controller: {
+    // Owner: fill in the two bracketed values before this page goes to anyone who needs them.
+    text: 'spencertownley.com is run by [PLACEHOLDER: owner legal name], [PLACEHOLDER: city, state, country].',
+  },
+  cookies: 'This site does not set any cookies.',
+  storage: [
+    { key: 'st-muted', purpose: 'Remembers whether you turned the sound off.', type: 'Necessary' },
+    { key: 'jimothy.save', purpose: 'Saves your progress in the Jimothy game on the TV, only after you play it.', type: 'Necessary' },
+    { key: 'cookie-consent', purpose: 'Remembers that you have seen the storage notice. It expires after 180 days.', type: 'Necessary' },
+  ],
+  storageNote: 'All three live in localStorage on your device and are never sent to this site. You can clear them in your browser settings.',
+  collected: [
+    'Nothing is collected by the site itself: no forms, accounts or analytics.',
+    'Email messages you choose to send to the contact address. They are forwarded by Cloudflare Email Routing once it is switched on.',
+    'IP addresses and request details in the hosting and CDN logs kept by Railway and Cloudflare.',
+  ],
+  loadsLead: 'Your browser contacts these hosts only when you ask for them:',
+  loads: [
+    { who: 'My own side projects', hosts: 'points-pool-production.up.railway.app, makethat.wtf, shortlist.spencertownley.workers.dev, trydownbeat.app', when: 'Only when you open that project in the laptop preview. They get your IP address and browser details, and no referrer.' },
+    { who: 'My own games (More., Smoosh)', hosts: 'makemorepaperclips.com, spencertownley-sys.github.io', when: 'Only when you start that game on the TV. Each keeps its own saves in its own browser storage.' },
+    { who: 'Cloudflare Web Analytics', hosts: 'static.cloudflareinsights.com', when: 'Cloudflare may try to add this automatically. This site blocks it with its content security policy, so it never runs and nothing is sent.' },
+  ],
+  hosts: [
+    { who: 'Railway', what: 'Hosts the Node server (United States).' },
+    { who: 'Cloudflare', what: 'DNS, CDN and security proxy, and Email Routing for the contact address once enabled (United States).' },
+  ],
+  retention: '[PLACEHOLDER: how long server logs and emailed enquiries are kept, for example logs 30 days and enquiries 24 months]',
+  rights:
+    'Wherever you live, you can ask what I hold about you, or ask me to correct or delete it, by emailing the contact address. I will answer within 30 days. This site does not sell or share personal information, and it honours Global Privacy Control signals.',
+  children: 'This site is not directed at children and does not knowingly collect their data.',
+  changes: 'If this page changes in a way that matters, the date above changes.',
 }
 
 export const framework = {
@@ -379,6 +441,8 @@ export interface Game {
   blurb: string | null
   /** Where the game runs. It plays inside the TV (it must allow being framed; add its origin to frame-src in server.mjs). */
   url: string | null
+  /** Empty cartridge slot: left off the menu until it has a game. */
+  hidden?: boolean
   /**
    * The smallest screen the game lays out well on, in CSS pixels. When the TV glass is smaller,
    * the game runs at a larger size and is scaled down to fit, so it shrinks instead of cropping.
@@ -424,11 +488,13 @@ export const games = {
       // A portrait phone game: its home screen and board need about a phone's height.
       minViewport: { width: 360, height: 760 },
     },
-    { id: 'game-4', title: null, blurb: null, url: null },
+    { id: 'game-4', title: null, blurb: null, url: null, hidden: true },
   ] as Game[],
   emptySlot: 'EMPTY SLOT',
   comingSoon: 'This cartridge is still being soldered together. Check back soon.',
 }
+
+export const visibleGames = games.items.filter((g) => !g.hidden)
 
 export const washington = {
   eyebrow: 'Out the window',

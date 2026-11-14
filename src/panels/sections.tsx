@@ -7,6 +7,7 @@ import {
   links,
   music,
   photography,
+  privacy,
   projects,
   projectsCopy,
   site,
@@ -15,6 +16,7 @@ import {
   video,
   work,
   games,
+  visibleGames,
   youtube,
   type SectionId,
 } from '../content/site'
@@ -83,7 +85,7 @@ function Work() {
         </ul>
       </Section>
 
-      <Placeholder title="The longer story">{work.story.placeholder}</Placeholder>
+      {!work.story.hidden && <Placeholder title="The longer story">{work.story.placeholder}</Placeholder>}
 
       <div className="btn-row">
         <ExtLink href={`mailto:${site.email}`} icon={<MailIcon width={17} height={17} />}>
@@ -151,16 +153,18 @@ function Photography() {
           ))}
         </div>
       </Section>
-      <Section title="Landscapes and wildlife" aside={<Soon>Selects coming soon</Soon>}>
-        <div className="photo-placeholders">
-          {photography.placeholders.map((label, i) => (
-            <div key={i} className="photo-ph">
-              <CameraIcon width={22} height={22} />
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
-      </Section>
+      {!photography.placeholders.hidden && (
+        <Section title="Landscapes and wildlife" aside={<Soon>Selects coming soon</Soon>}>
+          <div className="photo-placeholders">
+            {photography.placeholders.labels.map((label, i) => (
+              <div key={i} className="photo-ph">
+                <CameraIcon width={22} height={22} />
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
       <div className="btn-row">
         <ExtLink href={links.photoSite.url}>Full portfolio</ExtLink>
         <ExtLink href={links.photoInstagram.url} icon={<InstagramIcon width={17} height={17} />} variant="ghost">
@@ -178,12 +182,14 @@ function Video() {
   return (
     <>
       <p className="lead">{video.lead}</p>
-      <div className="reel-frame">
-        <div className="reel-screen">
-          <span className="reel-play" aria-hidden="true" />
-          <span className="reel-label">Reel coming soon</span>
+      {!video.reel.hidden && (
+        <div className="reel-frame">
+          <div className="reel-screen">
+            <span className="reel-play" aria-hidden="true" />
+            <span className="reel-label">Reel coming soon</span>
+          </div>
         </div>
-      </div>
+      )}
       <div className="btn-row">
         <ExtLink href={links.videoSite.url}>Video portfolio</ExtLink>
       </div>
@@ -273,9 +279,11 @@ function Trips() {
   return (
     <>
       <p className="lead">{trips.lead}</p>
-      <Placeholder title="Example itinerary" badge="Itinerary coming soon">
-        {trips.placeholder}
-      </Placeholder>
+      {!trips.placeholder.hidden && (
+        <Placeholder title="Example itinerary" badge="Itinerary coming soon">
+          {trips.placeholder.text}
+        </Placeholder>
+      )}
       <ol className="timeline">
         {trips.skeleton.map((s) => (
           <li key={s.day}>
@@ -322,6 +330,69 @@ function HowIBuild() {
   )
 }
 
+function Privacy() {
+  return (
+    <>
+      <p className="lead">{privacy.lead}</p>
+      <p className="map-hint">Last updated {privacy.updated}</p>
+      <Section title="Who is responsible">
+        <p>
+          {privacy.controller.text} Contact: <a href={`mailto:${site.email}`}>{site.email}</a>.
+        </p>
+      </Section>
+      <Section title="Cookies and browser storage">
+        <p>{privacy.cookies}</p>
+        <ul className="evidence">
+          {privacy.storage.map((s) => (
+            <li key={s.key}>
+              <strong>{s.key}</strong> <span>{s.purpose} ({s.type}, localStorage)</span>
+            </li>
+          ))}
+        </ul>
+        <p>{privacy.storageNote}</p>
+      </Section>
+      <Section title="What is collected">
+        <ul className="evidence">
+          {privacy.collected.map((c) => (
+            <li key={c}>{c}</li>
+          ))}
+        </ul>
+      </Section>
+      <Section title="Other companies your browser contacts">
+        <p>{privacy.loadsLead}</p>
+        <ul className="evidence">
+          {privacy.loads.map((l) => (
+            <li key={l.who}>
+              <strong>{l.who}</strong> <span>{l.hosts}. {l.when}</span>
+            </li>
+          ))}
+        </ul>
+      </Section>
+      <Section title="Who hosts the site">
+        <ul className="evidence">
+          {privacy.hosts.map((h) => (
+            <li key={h.who}>
+              <strong>{h.who}</strong> <span>{h.what}</span>
+            </li>
+          ))}
+        </ul>
+      </Section>
+      <Section title="How long it is kept">
+        <p>{privacy.retention}</p>
+      </Section>
+      <Section title="Your rights">
+        <p>{privacy.rights}</p>
+      </Section>
+      <Section title="Children">
+        <p>{privacy.children}</p>
+      </Section>
+      <Section title="Changes">
+        <p>{privacy.changes}</p>
+      </Section>
+    </>
+  )
+}
+
 function Framework() {
   return <Placeholder title="Reserved slot">{framework.placeholder}</Placeholder>
 }
@@ -360,7 +431,7 @@ function Games() {
     <>
       <p className="lead">{games.lead}</p>
       <div className="case-list">
-        {games.items.map((g, i) => (
+        {visibleGames.map((g, i) => (
           <article key={g.id} className={`card case-card ${g.title ? '' : 'is-slot'}`}>
             <div className="card-head">
               <span className="case-num" aria-hidden="true">
@@ -394,4 +465,5 @@ export const sectionContent: Record<Exclude<SectionId, 'links'>, () => ReactNode
   currently: Currently,
   'travel-and-planning': TravelAndPlanning,
   games: Games,
+  privacy: Privacy,
 }

@@ -109,6 +109,30 @@ export function IconTray() {
   )
 }
 
+/** Re-opens the storage notice (cookie-banner.js listens for data-cookie-settings on the whole document). */
+export function CookieSettingsButton() {
+  return (
+    <button type="button" data-cookie-settings className="footer-link cookie-settings">
+      Cookie settings
+    </button>
+  )
+}
+
+/** Opens /privacy from inside the app; a plain link otherwise. */
+export function PrivacyLink() {
+  const go = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+    e.preventDefault()
+    ambience.sfx('open')
+    navigate('/privacy', { replace: window.location.pathname !== '/' })
+  }
+  return (
+    <a className="footer-link" href="/privacy" onClick={go}>
+      Privacy
+    </a>
+  )
+}
+
 export function BottomBar({ compact, mode }: { compact: boolean; mode: Mode }) {
   return (
     <footer className="bottom-bar">
@@ -119,6 +143,12 @@ export function BottomBar({ compact, mode }: { compact: boolean; mode: Mode }) {
         <p className="room-intro">
           {site.intro} <span>{site.roomHint}</span>
         </p>
+      )}
+      {!compact && (
+        <span className="footer-links">
+          <PrivacyLink />
+          <CookieSettingsButton />
+        </span>
       )}
       {!compact && (
         <a className="contact-link" href={`mailto:${site.email}`}>

@@ -234,7 +234,7 @@
 }
 
 .grid-hint {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .room-grid {
@@ -408,7 +408,7 @@
 }
 
 .note-fact b {
-  color: var(--red);
+  color: var(--red-text);
   font-weight: 900;
 }
 
