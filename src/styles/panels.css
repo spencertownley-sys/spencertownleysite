@@ -21,8 +21,8 @@
   --p-muted: #6d5c52;
   --p-line: rgba(35, 28, 26, 0.1);
   --p-card: #fff;
-  --p-accent: var(--red);
-  --p-eyebrow: var(--red);
+  --p-accent: var(--red-text);
+  --p-eyebrow: var(--red-text);
   --p-font: var(--font-room);
   --p-head: var(--font-room);
 
@@ -334,7 +334,7 @@
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 700;
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .case-card.is-slot {

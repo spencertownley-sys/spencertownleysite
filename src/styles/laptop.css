@@ -140,7 +140,7 @@
 }
 
 .desk-back:hover {
-  background: #d6543f;
+  background: #b03f2c;
 }
 
 .desk-back:focus-visible,
@@ -600,7 +600,7 @@
 }
 
 .readme-btn:hover {
-  background: #d6543f;
+  background: #b03f2c;
 }
 
 .readme-btn.is-ghost {
@@ -763,7 +763,7 @@
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #d6543f;
+  color: #b03f2c;
 }
 
 .doc-role {

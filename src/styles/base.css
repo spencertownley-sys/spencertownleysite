@@ -5,6 +5,8 @@
   --paper: #fbf7ee;
   --ink: #231c1a;
   --red: #d6543f;
+  /* terracotta for text and button fills: 5.1:1 on cream, 5.8:1 with white text. Keep --red for decorative fills. */
+  --red-text: #b03f2c;
   --green: #3f7d4e;
   --mustard: #d9a441;
   --sky: #5fb4d9;
@@ -228,7 +230,7 @@ a {
   font-size: 14px;
   text-decoration: none;
   white-space: nowrap;
-  background: var(--red);
+  background: var(--red-text);
   color: #fff;
   border: 0;
   box-shadow: 0 8px 22px rgba(150, 50, 25, 0.38);
@@ -434,7 +436,7 @@ a {
 }
 
 .room-intro span {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .panel-open .room-intro {

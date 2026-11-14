@@ -78,11 +78,11 @@
 
 .garden-eyebrow {
   margin: 0 0 2px;
-  font-size: calc(11px * var(--k));
+  font-size: max(12px, calc(11px * var(--k)));
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .garden-card h2 {
